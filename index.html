@@ -215,6 +215,54 @@
     display:block; text-align:center; font-size:12px; color:var(--ink-dim);
     margin:18px 0 4px; text-decoration:none;
   }
+
+  /* ===== โมดัลความคืบหน้าตอนบันทึก ===== */
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(10,16,24,0.55);
+    display:flex; align-items:center; justify-content:center;
+    z-index:100; opacity:0; pointer-events:none; transition:opacity .25s ease;
+    padding:20px;
+  }
+  .modal-overlay.show{opacity:1; pointer-events:auto;}
+  .modal-box{
+    background:#fff; border-radius:20px; box-shadow:0 20px 60px rgba(0,0,0,0.35);
+    max-width:400px; width:100%;
+  }
+  .progress-box{padding:30px 24px; text-align:center;}
+  .progress-ring-wrap{position:relative; width:128px; height:128px; margin:0 auto 18px;}
+  .progress-ring{width:128px; height:128px; transform:rotate(-90deg);}
+  .progress-ring-bg{fill:none; stroke:rgba(21,34,48,0.09); stroke-width:9;}
+  .progress-ring-fill{
+    fill:none; stroke:var(--steel); stroke-width:9; stroke-linecap:round;
+    transition:stroke-dashoffset .25s ease, stroke .25s ease;
+  }
+  .progress-ring-fill.done{stroke:var(--safe);}
+  .progress-percent{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-family:'JetBrains Mono',monospace; font-size:24px; font-weight:700; color:var(--ink);
+  }
+  .progress-label{font-size:14px; font-weight:600; color:var(--ink-dim);}
+
+  /* ===== โมดัลรายงานหลังบันทึก ===== */
+  .report-box{max-width:480px; overflow:hidden; text-align:left; max-height:88vh; display:flex; flex-direction:column;}
+  .report-modal-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 18px; background:linear-gradient(155deg,var(--steel),#1c3350); color:#fff;
+    font-weight:700; font-size:14.5px; flex:none;
+  }
+  .modal-close{
+    background:rgba(255,255,255,0.18); border:none; color:#fff; width:28px; height:28px;
+    border-radius:9px; font-size:15px; cursor:pointer; line-height:1;
+  }
+  .report-img-wrap{overflow-y:auto; background:#eef1f5; padding:12px; flex:1;}
+  .report-img-wrap img{width:100%; display:block; border-radius:10px; box-shadow:0 4px 16px rgba(0,0,0,0.14);}
+  .report-modal-actions{display:flex; gap:10px; padding:14px 18px; flex:none;}
+  .btn-report{
+    flex:1; text-align:center; padding:12px 0; border-radius:12px; border:none;
+    font-family:inherit; font-size:14px; font-weight:700; cursor:pointer; text-decoration:none;
+    background:var(--steel); color:#fff;
+  }
+  .btn-report-secondary{background:rgba(44,74,110,0.1); color:var(--steel);}
 </style>
 </head>
 <body>
@@ -369,6 +417,37 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- โมดัลความคืบหน้าตอนบันทึก -->
+<div class="modal-overlay" id="progressModal">
+  <div class="modal-box progress-box">
+    <div class="progress-ring-wrap">
+      <svg viewBox="0 0 100 100" class="progress-ring">
+        <circle class="progress-ring-bg" cx="50" cy="50" r="45"></circle>
+        <circle class="progress-ring-fill" id="progressRingFill" cx="50" cy="50" r="45"></circle>
+      </svg>
+      <div class="progress-percent" id="progressPercent">0%</div>
+    </div>
+    <div class="progress-label" id="progressLabel">กำลังบันทึก…</div>
+  </div>
+</div>
+
+<!-- โมดัลแสดงรายงานหลังบันทึกสำเร็จ -->
+<div class="modal-overlay" id="reportModal">
+  <div class="modal-box report-box">
+    <div class="report-modal-head">
+      <span>บันทึกสำเร็จ — รายงานของคุณ</span>
+      <button class="modal-close" id="reportModalClose" type="button">✕</button>
+    </div>
+    <div class="report-img-wrap">
+      <img id="reportModalImg" alt="รายงานตรวจสอบน้ำหนัก">
+    </div>
+    <div class="report-modal-actions">
+      <a class="btn-report" id="reportDownloadBtn" download="รายงานตรวจสอบน้ำหนัก.jpg">ดาวน์โหลดภาพ</a>
+      <button class="btn-report btn-report-secondary" id="reportShareBtn" type="button">แชร์ต่อ</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /** ============================================================
  *  หมายเหตุสถาปัตยกรรม (เวอร์ชันโฮสต์บน GitHub Pages):
@@ -423,6 +502,60 @@ async function callApi(payload){
 
 let officerName = '';
 const photos = {}; // idx -> {base64, mimeType, label, dataUrl}
+
+/** ======= โมดัลความคืบหน้า (วงกลมเปอร์เซ็นต์) ======= */
+const progressModal = document.getElementById('progressModal');
+const progressRingFill = document.getElementById('progressRingFill');
+const progressPercent = document.getElementById('progressPercent');
+const progressLabel = document.getElementById('progressLabel');
+const RING_CIRC = 2 * Math.PI * 45;
+progressRingFill.style.strokeDasharray = RING_CIRC;
+
+function setProgress(pct, label){
+  pct = Math.max(0, Math.min(100, pct));
+  progressRingFill.style.strokeDashoffset = RING_CIRC * (1 - pct / 100);
+  progressRingFill.classList.toggle('done', pct >= 100);
+  progressPercent.textContent = Math.round(pct) + '%';
+  if (label) progressLabel.textContent = label;
+}
+function showProgressModal(){
+  setProgress(0, 'กำลังเตรียมข้อมูล…');
+  progressModal.classList.add('show');
+}
+function hideProgressModal(){
+  progressModal.classList.remove('show');
+}
+
+/** ======= โมดัลแสดงรายงานหลังบันทึกสำเร็จ ======= */
+const reportModal = document.getElementById('reportModal');
+function openReportModal(dataUrl, plate, dateThai){
+  const img = document.getElementById('reportModalImg');
+  img.src = dataUrl;
+  const dlBtn = document.getElementById('reportDownloadBtn');
+  dlBtn.href = dataUrl;
+  const safeName = ('รายงาน_' + (plate || '') + '_' + (dateThai || '')).replace(/\s+/g, '_') + '.jpg';
+  dlBtn.download = safeName;
+  reportModal.classList.add('show');
+}
+function closeReportModal(){
+  reportModal.classList.remove('show');
+}
+document.getElementById('reportModalClose').addEventListener('click', closeReportModal);
+document.getElementById('reportShareBtn').addEventListener('click', async ()=>{
+  const dataUrl = document.getElementById('reportModalImg').src;
+  try{
+    const res = await fetch(dataUrl);
+    const blob = await res.blob();
+    const file = new File([blob], 'รายงานตรวจสอบน้ำหนัก.jpg', { type: 'image/jpeg' });
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })){
+      await navigator.share({ files: [file], title: 'รายงานตรวจสอบน้ำหนักรถบรรทุก' });
+    } else {
+      showToast('อุปกรณ์นี้ไม่รองรับการแชร์ไฟล์โดยตรง กรุณาใช้ปุ่มดาวน์โหลดแทน', true);
+    }
+  } catch(err){
+    showToast('แชร์ไม่สำเร็จ: ' + err.message, true);
+  }
+});
 
 /** ======= LIFF init ======= */
 async function initLiff(){
@@ -615,7 +748,7 @@ function wrapText(ctx, text, maxWidth){
   if (line) lines.push(line);
   return lines;
 }
-async function generateReportImage(d){
+async function generateReportImage(d, onProgress){
   const W = 1000, H = 1500;
   const canvas = document.createElement('canvas');
   canvas.width = W; canvas.height = H;
@@ -718,11 +851,18 @@ async function generateReportImage(d){
 
   // รูปหลักฐาน (สูงสุด 4 รูป แบบ 2x2)
   const filled = [1,2,3,4].map(i=>photos[i]).filter(Boolean);
+  const totalAsyncSteps = filled.length + 3; // รูป + ลายเซ็น 3 ช่อง
+  let doneAsyncSteps = 0;
+  function tickProgress(){
+    doneAsyncSteps++;
+    if (onProgress) onProgress(doneAsyncSteps / totalAsyncSteps);
+  }
   if (filled.length){
     const cellW = (W - 2*M - 12) / 2, cellH = 190;
     for (let i=0; i<Math.min(filled.length,4); i++){
       const cx = M + (i%2)*(cellW+12), cy = y + Math.floor(i/2)*(cellH+12);
       const img = await loadImageFromDataUrl(filled[i].dataUrl);
+      tickProgress();
       ctx.strokeStyle = '#d8dee5'; ctx.strokeRect(cx, cy, cellW, cellH);
       if (img){
         const scale = Math.max(cellW/img.width, cellH/img.height);
@@ -754,6 +894,7 @@ async function generateReportImage(d){
       const img = await loadImageFromDataUrl(pad.toDataUrl());
       if (img) ctx.drawImage(img, sx, y, sigW, sigH);
     }
+    tickProgress();
     y += sigH;
     ctx.strokeStyle = '#9aa7b4'; ctx.beginPath();
     ctx.moveTo(sx, y); ctx.lineTo(sx+sigW, y); ctx.stroke();
@@ -833,20 +974,43 @@ document.getElementById('submitBtn').addEventListener('click', async ()=>{
   };
 
   const btn = document.getElementById('submitBtn');
-  btn.disabled = true; btn.textContent = 'กำลังสร้างรายงาน…';
+  btn.disabled = true;
+  showProgressModal();
+
+  let simTimer = null;
   try{
-    const reportDataUrl = await generateReportImage(data);
+    // ช่วงที่ 1 (0-45%): สร้างภาพรายงานจากฟอร์ม+รูป+ลายเซ็น — มีความคืบหน้าจริงตามจำนวนรูป/ลายเซ็นที่โหลดเสร็จ
+    setProgress(3, 'กำลังสร้างรายงาน…');
+    const reportDataUrl = await generateReportImage(data, (frac)=>{
+      setProgress(3 + frac * 42, 'กำลังสร้างรายงาน…');
+    });
     data.reportImage = reportDataUrl.split(',')[1];
 
-    btn.textContent = 'กำลังบันทึก…';
+    // ช่วงที่ 2 (45-92%): ส่งข้อมูลขึ้นเซิร์ฟเวอร์ — เพิ่มขึ้นแบบจำลองระหว่างรอเซิร์ฟเวอร์ตอบกลับ (ไม่ทราบเวลาจริง)
+    setProgress(45, 'กำลังอัปโหลดข้อมูลและรูปภาพ…');
+    let simPct = 45;
+    simTimer = setInterval(()=>{
+      simPct = Math.min(simPct + Math.random() * 5, 92);
+      setProgress(simPct, 'กำลังอัปโหลดข้อมูลและรูปภาพ…');
+    }, 350);
+
     const result = await callApi({ action: 'submit', data: data });
+    clearInterval(simTimer); simTimer = null;
+    setProgress(100, 'บันทึกสำเร็จ ✓');
+    await new Promise(r=>setTimeout(r, 450));
+    hideProgressModal();
+
     showToast('บันทึกสำเร็จ ✓ บันทึกรูป ' + result.photoCount + ' รูป');
     try{
       localStorage.setItem('tw_lastLocation', data.location);
       localStorage.setItem('tw_lastInspector1', data.inspector1);
     }catch(e){}
+
+    openReportModal(reportDataUrl, data.plate, data.dateThai);
     resetForm();
   } catch(err){
+    if (simTimer) clearInterval(simTimer);
+    hideProgressModal();
     showToast('เกิดข้อผิดพลาด: ' + err.message, true, 5000);
   } finally {
     btn.disabled = false; btn.textContent = 'บันทึกข้อมูล';
