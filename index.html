@@ -80,7 +80,7 @@
     padding:18px 16px;
     margin-bottom:14px;
   }
-  .card h2{font-size:13px; margin:0 0 12px; color:var(--ink-dim); font-weight:700; text-transform:none;}
+  .card h2{font-size:13px; margin:0 0 12px; color:var(--ink-dim); font-weight:700;}
   .field{margin-bottom:12px;}
   .field:last-child{margin-bottom:0;}
   .field label{display:block; font-size:13px; font-weight:600; margin-bottom:5px; color:var(--ink);}
@@ -140,14 +140,16 @@
     cursor:pointer; text-align:center; padding:6px;
   }
   .photo-slot img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover;}
-  .photo-slot input{position:absolute; inset:0; opacity:0; cursor:pointer;}
+  .photo-slot input{position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%;}
   .photo-slot .icon{font-size:21px;}
   .photo-slot.filled{border-style:solid; border-color:var(--steel);}
-  .remove-badge{
-    position:absolute; top:6px; right:6px; width:22px; height:22px; border-radius:50%;
-    background:rgba(15,20,26,0.65); color:#fff; font-size:13px; display:flex;
-    align-items:center; justify-content:center; z-index:2;
+  .photo-slot .lbl{position:relative; z-index:1; pointer-events:none;}
+  .photo-slot.filled .icon,.photo-slot.filled .lbl{
+    position:absolute; bottom:4px; left:0; right:0; z-index:2;
+    background:rgba(15,20,26,0.55); color:#fff; padding:3px 0; font-size:10.5px; border-radius:0 0 12px 12px;
   }
+  .photo-slot.filled .icon{display:none;}
+
   .check-row{display:flex; align-items:flex-start; gap:10px; padding:4px 2px;}
   .check-row input{width:19px; height:19px; margin-top:1px; flex:none;}
   .check-row label{font-size:13.5px; color:var(--ink); line-height:1.4;}
@@ -163,6 +165,25 @@
     background:rgba(255,255,255,0.6); padding:7px 11px; border-radius:12px; margin-bottom:14px;
   }
   .officer-chip .dot{width:7px; height:7px; border-radius:50%; background:var(--safe); flex:none;}
+
+  /* ลายเซ็นสัมผัส */
+  .sigpad-wrap{
+    position:relative; border:1.5px dashed rgba(21,34,48,0.25); border-radius:12px;
+    background:#fff; margin-top:6px; overflow:hidden;
+  }
+  .sigpad-wrap.has-sig{border-style:solid; border-color:var(--steel);}
+  .sigpad{display:block; width:100%; height:120px; touch-action:none; cursor:crosshair;}
+  .sigpad-placeholder{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-size:12.5px; color:var(--ink-dim); pointer-events:none;
+  }
+  .sigpad-wrap.has-sig .sigpad-placeholder{display:none;}
+  .sig-toolbar{display:flex; justify-content:flex-end; margin-top:5px;}
+  .sig-clear{
+    border:none; background:none; color:var(--steel); font-family:inherit;
+    font-size:12px; font-weight:700; padding:2px 4px; cursor:pointer;
+  }
+
   /* history */
   .entry{
     background:var(--glass); border:1px solid var(--glass-border);
@@ -277,19 +298,19 @@
       <h2>รูปภาพหลักฐาน</h2>
       <div class="photo-grid">
         <label class="photo-slot" id="slot1" data-label="รถและผู้ขับขี่">
-          <div class="icon">📷</div><div>รถ/ผู้ขับขี่</div>
+          <div class="icon">📷</div><div class="lbl">รถ/ผู้ขับขี่</div>
           <input type="file" accept="image/*" capture="environment" data-idx="1">
         </label>
         <label class="photo-slot" id="slot2" data-label="ใบขับขี่และทะเบียน">
-          <div class="icon">🪪</div><div>ใบขับขี่/ทะเบียน</div>
+          <div class="icon">🪪</div><div class="lbl">ใบขับขี่/ทะเบียน</div>
           <input type="file" accept="image/*" capture="environment" data-idx="2">
         </label>
         <label class="photo-slot" id="slot3" data-label="ใบชั่งน้ำหนัก">
-          <div class="icon">🧾</div><div>ใบชั่งน้ำหนัก</div>
+          <div class="icon">🧾</div><div class="lbl">ใบชั่งน้ำหนัก</div>
           <input type="file" accept="image/*" capture="environment" data-idx="3">
         </label>
         <label class="photo-slot" id="slot4" data-label="รูปเพิ่มเติม">
-          <div class="icon">➕</div><div>เพิ่มเติม</div>
+          <div class="icon">➕</div><div class="lbl">เพิ่มเติม</div>
           <input type="file" accept="image/*" capture="environment" data-idx="4">
         </label>
       </div>
@@ -298,14 +319,37 @@
 
     <div class="card">
       <h2>ผู้ลงลายมือชื่อ</h2>
-      <div class="field"><label>ผู้ตรวจสอบ/บันทึก/ผู้ชั่งน้ำหนัก</label>
-        <input type="text" id="fInspector1" placeholder="ยศ ชื่อ นามสกุล"></div>
-      <div class="field"><label>ผู้ตรวจสอบ (คนที่ 2)</label>
-        <input type="text" id="fInspector2" placeholder="ยศ ชื่อ นามสกุล"></div>
-      <div class="check-row">
-        <input type="checkbox" id="fDriverConfirm">
-        <label for="fDriverConfirm">ผู้ขับรถ/ร่วมตรวจสอบ ได้อ่านและรับว่าข้อมูลถูกต้องแล้ว</label>
+
+      <div class="field">
+        <label>ผู้ตรวจสอบ/บันทึก/ผู้ชั่งน้ำหนัก</label>
+        <input type="text" id="fInspector1" placeholder="ยศ ชื่อ นามสกุล">
+        <div class="sigpad-wrap" id="sigWrap1">
+          <canvas class="sigpad" id="sig1"></canvas>
+          <div class="sigpad-placeholder">แตะเพื่อลงลายมือชื่อ</div>
+        </div>
+        <div class="sig-toolbar"><button type="button" class="sig-clear" data-target="sig1">ล้างลายเซ็น</button></div>
       </div>
+
+      <div class="field">
+        <label>ผู้ตรวจสอบ (คนที่ 2)</label>
+        <input type="text" id="fInspector2" placeholder="ยศ ชื่อ นามสกุล">
+        <div class="sigpad-wrap" id="sigWrap2">
+          <canvas class="sigpad" id="sig2"></canvas>
+          <div class="sigpad-placeholder">แตะเพื่อลงลายมือชื่อ (ถ้ามี)</div>
+        </div>
+        <div class="sig-toolbar"><button type="button" class="sig-clear" data-target="sig2">ล้างลายเซ็น</button></div>
+      </div>
+
+      <div class="field">
+        <label>ผู้ขับรถ/ร่วมตรวจสอบ (ใช้ชื่อผู้ขับขี่ด้านบน)</label>
+        <div class="sigpad-wrap" id="sigWrap3">
+          <canvas class="sigpad" id="sig3"></canvas>
+          <div class="sigpad-placeholder">ผู้ขับรถแตะเพื่อลงลายมือชื่อ</div>
+        </div>
+        <div class="sig-toolbar"><button type="button" class="sig-clear" data-target="sig3">ล้างลายเซ็น</button></div>
+        <p class="hint">ผู้ขับรถ/ร่วมตรวจสอบได้อ่านและรับว่าข้อมูลถูกต้องแล้ว โดยการลงลายมือชื่อข้างต้น</p>
+      </div>
+
       <div class="field"><label>หมายเหตุ</label><textarea id="fNote" placeholder="(ถ้ามี)"></textarea></div>
     </div>
 
@@ -326,11 +370,15 @@
 <div class="toast" id="toast"></div>
 
 <script>
-/** ======= ตั้งค่า ======= */
+/** ============================================================
+ *  หมายเหตุการแก้บั๊ก:
+ *  เวอร์ชันก่อนหน้าฝัง URL ของเว็บแอปผ่านสคริปต์เล็ต <?!= ?> ของ Apps Script
+ *  ถ้าดีพลอยผิดขั้นตอน (ไม่ได้ผ่าน createTemplateFromFile) ข้อความสคริปต์เล็ตจะไม่ถูกแทนที่
+ *  กลายเป็นโค้ด JS ที่พังตั้งแต่บรรทัดแรก ทำให้ "ทั้งหน้า" ไม่ตอบสนองเลย (ปุ่ม/ช่องกดไม่ได้)
+ *  เวอร์ชันนี้เปลี่ยนมาใช้ google.script.run ซึ่งเป็นกลไกมาตรฐานของ Apps Script Web App
+ *  เรียกฟังก์ชันฝั่งเซิร์ฟเวอร์ได้โดยตรง ไม่ต้องพึ่ง URL หรือ fetch() อีกต่อไป
+ * ============================================================ */
 const LIFF_ID = 'ใส่ LIFF ID ตรงนี้';
-// API_URL ถูกฝังมาจากฝั่งเซิร์ฟเวอร์ (Code.gs -> ScriptApp.getService().getUrl())
-// เพื่อให้ตรงกับดีพลอยเมนต์ปัจจุบันเสมอ ไม่ต้องแก้ไขค่านี้ด้วยมือ
-const API_URL = <?!= JSON.stringify(apiUrl) ?>;
 
 const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
   'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
@@ -344,8 +392,22 @@ function todayIso(){
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
 }
 
+/** ======= เรียกฟังก์ชันฝั่งเซิร์ฟเวอร์ผ่าน google.script.run แบบ Promise ======= */
+function gsRun(fnName, ...args){
+  return new Promise((resolve, reject)=>{
+    if (!window.google || !google.script || !google.script.run){
+      reject(new Error('ไม่พบ google.script.run — ต้องเปิดหน้านี้ผ่านลิงก์ .../exec ของเว็บแอปเท่านั้น'));
+      return;
+    }
+    google.script.run
+      .withSuccessHandler(resolve)
+      .withFailureHandler(err => reject(new Error((err && err.message) || String(err))))
+      [fnName](...args);
+  });
+}
+
 let officerName = '';
-const photos = {}; // idx -> {base64, mimeType, label}
+const photos = {}; // idx -> {base64, mimeType, label, dataUrl}
 
 /** ======= LIFF init ======= */
 async function initLiff(){
@@ -432,7 +494,8 @@ document.querySelectorAll('.photo-slot input').forEach(inp=>{
     photos[idx] = {
       base64: dataUrl.split(',')[1],
       mimeType: 'image/jpeg',
-      label: slot.dataset.label
+      label: slot.dataset.label,
+      dataUrl: dataUrl
     };
     let img = slot.querySelector('img');
     if (!img){ img = document.createElement('img'); slot.prepend(img); }
@@ -441,6 +504,256 @@ document.querySelectorAll('.photo-slot input').forEach(inp=>{
   });
 });
 
+/** ======= ลายเซ็นสัมผัส (Signature Pad) ======= */
+class SignaturePad{
+  constructor(canvas){
+    this.canvas = canvas;
+    this.ctx = canvas.getContext('2d');
+    this.drawing = false;
+    this.empty = true;
+    this.sized = false;
+    this.resize();
+    canvas.addEventListener('pointerdown', e=>this.start(e));
+    canvas.addEventListener('pointermove', e=>this.move(e));
+    canvas.addEventListener('pointerup', e=>this.end(e));
+    canvas.addEventListener('pointercancel', e=>this.end(e));
+  }
+  resize(){
+    if (this.sized) return;
+    const rect = this.canvas.getBoundingClientRect();
+    if (!rect.width) return; // ยังไม่ถูก layout, จะลองใหม่ตอน start()
+    const ratio = window.devicePixelRatio || 1;
+    this.canvas.width = rect.width * ratio;
+    this.canvas.height = rect.height * ratio;
+    this.ctx.scale(ratio, ratio);
+    this.ctx.lineWidth = 2.4;
+    this.ctx.lineCap = 'round';
+    this.ctx.lineJoin = 'round';
+    this.ctx.strokeStyle = '#152230';
+    this.sized = true;
+  }
+  pos(e){
+    const rect = this.canvas.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  }
+  start(e){
+    this.resize();
+    this.drawing = true; this.empty = false;
+    this.canvas.setPointerCapture(e.pointerId);
+    const p = this.pos(e);
+    this.ctx.beginPath();
+    this.ctx.moveTo(p.x, p.y);
+    this.canvas.closest('.sigpad-wrap').classList.add('has-sig');
+    e.preventDefault();
+  }
+  move(e){
+    if (!this.drawing) return;
+    const p = this.pos(e);
+    this.ctx.lineTo(p.x, p.y);
+    this.ctx.stroke();
+    e.preventDefault();
+  }
+  end(e){ this.drawing = false; }
+  clear(){
+    this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height);
+    this.empty = true;
+    this.canvas.closest('.sigpad-wrap').classList.remove('has-sig');
+  }
+  isEmpty(){ return this.empty; }
+  toDataUrl(){ return this.canvas.toDataURL('image/png'); }
+}
+const sigPads = {
+  sig1: new SignaturePad(document.getElementById('sig1')),
+  sig2: new SignaturePad(document.getElementById('sig2')),
+  sig3: new SignaturePad(document.getElementById('sig3'))
+};
+document.querySelectorAll('.sig-clear').forEach(btn=>{
+  btn.addEventListener('click', ()=>sigPads[btn.dataset.target].clear());
+});
+// บาง browser คำนวณขนาด canvas ผิดถ้า layout ยังไม่เสร็จตอน init — ลองปรับขนาดอีกครั้งหลังโหลดหน้าเสร็จ
+window.addEventListener('load', ()=>Object.values(sigPads).forEach(p=>p.resize()));
+
+/** ======= สร้างภาพรายงานสรุป (จำลองแบบฟอร์มกระดาษ) =======
+ * ใช้ Canvas 2D API วาดตรงๆ (ไม่ใช้ html2canvas) และใช้ system font stack แทนฟอนต์เว็บ
+ * เพื่อเลี่ยงปัญหา font-loading race condition ที่เคยเจอบนเบราว์เซอร์ในแอป LINE
+ */
+async function loadImageFromDataUrl(dataUrl){
+  return new Promise((resolve)=>{
+    const img = new Image();
+    img.onload = ()=>resolve(img);
+    img.onerror = ()=>resolve(null);
+    img.src = dataUrl;
+  });
+}
+function wrapText(ctx, text, maxWidth){
+  const lines = [];
+  let line = '';
+  for (const ch of String(text || '')){
+    const test = line + ch;
+    if (ctx.measureText(test).width > maxWidth && line){
+      lines.push(line);
+      line = ch;
+    } else {
+      line = test;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+async function generateReportImage(d){
+  const W = 1000, H = 1500;
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  const FONT = '"Noto Sans Thai","Sarabun",-apple-system,"Segoe UI",sans-serif';
+
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,W,H);
+  ctx.textBaseline = 'middle';
+  const M = 44;
+  let y = 50;
+
+  ctx.fillStyle = '#152230';
+  ctx.font = '700 26px ' + FONT;
+  ctx.textAlign = 'center';
+  ctx.fillText('บันทึกตรวจสอบน้ำหนักรถยนต์บรรทุก', W/2, y);
+  y += 40;
+
+  // ตารางข้อมูล
+  const rows = [
+    ['วัน เดือน ปี ที่ตรวจสอบ', d.dateThai, 'เวลา', (d.time||'-') + ' น.'],
+    ['สถานที่ตรวจสอบ/ชั่ง', d.location || '-', '', ''],
+    ['หมายเลขทะเบียน', d.plate || '-', 'ลักษณะรถ', d.vehicleType || '-'],
+    ['ชื่อผู้ขับขี่', d.driverName || '-', 'อายุ', (d.age||'-') + ' ปี'],
+    ['ที่อยู่/ใบอนุญาตขับขี่', d.driverAddress || '-', '', ''],
+    ['สินค้าที่บรรทุก', d.cargo || '-', '', ''],
+    ['ต้นทาง', d.origin || '-', 'ปลายทาง', d.destination || '-']
+  ];
+  ctx.font = '600 15px ' + FONT;
+  const col1X = M, col1W = 210, col2X = M+210, col2W = 260, col3X = M+470, col3W = 110, col4X = M+580, col4W = W-M-580-M+40;
+  const rowH = 40;
+  ctx.textAlign = 'left';
+  rows.forEach(r=>{
+    ctx.strokeStyle = '#d8dee5'; ctx.lineWidth = 1;
+    ctx.strokeRect(M, y, W-2*M, rowH);
+    ctx.fillStyle = '#5c6b7c'; ctx.font = '700 14px ' + FONT;
+    ctx.fillText(r[0], col1X+10, y+rowH/2);
+    ctx.fillStyle = '#152230'; ctx.font = '500 15px ' + FONT;
+    const v1Lines = wrapText(ctx, r[1], col2W+col3W+col4W-20);
+    ctx.fillText(v1Lines[0] || '-', col2X+10, y+rowH/2);
+    if (r[2]){
+      ctx.fillStyle = '#5c6b7c'; ctx.font = '700 14px ' + FONT;
+      ctx.fillText(r[2], col3X+10, y+rowH/2);
+      ctx.fillStyle = '#152230'; ctx.font = '500 15px ' + FONT;
+      ctx.fillText(r[3] || '-', col4X+10, y+rowH/2);
+    }
+    y += rowH;
+  });
+
+  // ผลการตรวจสอบ
+  ctx.strokeStyle = '#d8dee5';
+  ctx.strokeRect(M, y, W-2*M, rowH);
+  ctx.fillStyle = '#5c6b7c'; ctx.font = '700 14px ' + FONT;
+  ctx.fillText('ผลการตรวจสอบ (ชั่ง)', col1X+10, y+rowH/2);
+  ctx.fillStyle = '#152230'; ctx.font = '600 15px ' + FONT;
+  ctx.fillText('น้ำหนักรวม ' + (d.weight||'-') + ' กก.', col2X+10, y+rowH/2);
+  const isOver = d.result === 'เกิน';
+  ['ไม่เกิน','เกิน'].forEach((label,i)=>{
+    const bx = col3X + i*130, by = y+rowH/2-9;
+    const active = d.result === label;
+    ctx.fillStyle = active ? (label==='เกิน' ? '#c0342b' : '#1b8a4d') : '#ffffff';
+    ctx.strokeStyle = '#9aa7b4';
+    ctx.fillRect(bx, by, 18, 18); ctx.strokeRect(bx, by, 18, 18);
+    if (active){
+      ctx.fillStyle = '#ffffff'; ctx.font = '700 13px ' + FONT; ctx.textAlign='center';
+      ctx.fillText('✓', bx+9, by+10); ctx.textAlign='left';
+    }
+    ctx.fillStyle = '#152230'; ctx.font = '500 14px ' + FONT;
+    ctx.fillText(label, bx+24, y+rowH/2);
+  });
+  y += rowH;
+
+  // สติ๊กเกอร์
+  ctx.strokeRect(M, y, W-2*M, rowH);
+  ctx.fillStyle = '#5c6b7c'; ctx.font = '700 14px ' + FONT;
+  ctx.fillText('สติ๊กเกอร์/สัญลักษณ์อื่นใด', col1X+10, y+rowH/2);
+  ['มี','ไม่มี'].forEach((label,i)=>{
+    const bx = col2X + i*130, by = y+rowH/2-9;
+    const active = d.sticker === label;
+    ctx.fillStyle = active ? '#2c4a6e' : '#ffffff';
+    ctx.strokeStyle = '#9aa7b4';
+    ctx.fillRect(bx, by, 18, 18); ctx.strokeRect(bx, by, 18, 18);
+    if (active){
+      ctx.fillStyle = '#ffffff'; ctx.font = '700 13px ' + FONT; ctx.textAlign='center';
+      ctx.fillText('✓', bx+9, by+10); ctx.textAlign='left';
+    }
+    ctx.fillStyle = '#152230'; ctx.font = '500 14px ' + FONT;
+    ctx.fillText(label, bx+24, y+rowH/2);
+  });
+  y += rowH + 18;
+
+  // ข้อความแจ้งอำนาจหน้าที่
+  ctx.fillStyle = '#5c6b7c'; ctx.font = '400 13px ' + FONT;
+  const notice = 'อนึ่งในการตรวจสอบครั้งนี้เจ้าหน้าที่พนักงานตำรวจชุดตรวจสอบได้กระทำไปตามอำนาจหน้าที่ ' +
+    'มิได้ทำร้ายร่างกาย บังคับขู่เข็ญ แนะนำ หลอกลวง ชักจูง หรือให้สัญญาอย่างหนึ่งอย่างใด ' +
+    'มิได้เรียกรับหรือยอมรับหรือจะรับทรัพย์สินหรือประโยชน์อื่นใดจากผู้ขับขี่ ' +
+    'และมิได้ทำให้ทรัพย์สินเสียหายหรือเสื่อมค่าแต่อย่างใด เจ้าพนักงานผู้ตรวจสอบได้ให้ความเป็นธรรมดีแล้ว';
+  const noticeLines = wrapText(ctx, notice, W-2*M);
+  noticeLines.forEach(line=>{ ctx.fillText(line, M, y); y += 20; });
+  y += 14;
+
+  // รูปหลักฐาน (สูงสุด 4 รูป แบบ 2x2)
+  const filled = [1,2,3,4].map(i=>photos[i]).filter(Boolean);
+  if (filled.length){
+    const cellW = (W - 2*M - 12) / 2, cellH = 190;
+    for (let i=0; i<Math.min(filled.length,4); i++){
+      const cx = M + (i%2)*(cellW+12), cy = y + Math.floor(i/2)*(cellH+12);
+      const img = await loadImageFromDataUrl(filled[i].dataUrl);
+      ctx.strokeStyle = '#d8dee5'; ctx.strokeRect(cx, cy, cellW, cellH);
+      if (img){
+        const scale = Math.max(cellW/img.width, cellH/img.height);
+        const iw = img.width*scale, ih = img.height*scale;
+        ctx.save();
+        ctx.beginPath(); ctx.rect(cx, cy, cellW, cellH); ctx.clip();
+        ctx.drawImage(img, cx + (cellW-iw)/2, cy + (cellH-ih)/2, iw, ih);
+        ctx.restore();
+      }
+    }
+    y += Math.ceil(Math.min(filled.length,4)/2) * (cellH+12) + 10;
+  }
+
+  // ลายมือชื่อ
+  ctx.fillStyle = '#152230'; ctx.font = '500 14px ' + FONT; ctx.textAlign='center';
+  ctx.fillText('อ่านให้ฟังแล้วรับว่าถูกต้อง จึงได้ร่วมกันลงลายมือชื่อไว้เป็นหลักฐาน', W/2, y);
+  y += 30;
+
+  const sigDefs = [
+    ['sig1', d.inspector1, 'ผู้ตรวจสอบ/บันทึก/ผู้ชั่งน้ำหนัก'],
+    ['sig2', d.inspector2, 'ผู้ตรวจสอบ (คนที่ 2)'],
+    ['sig3', d.driverName, 'ผู้ขับรถ/ร่วมตรวจสอบ']
+  ];
+  const sigW = 280, sigH = 90;
+  for (const [key, name, role] of sigDefs){
+    const sx = W/2 - sigW/2;
+    const pad = sigPads[key];
+    if (!pad.isEmpty()){
+      const img = await loadImageFromDataUrl(pad.toDataUrl());
+      if (img) ctx.drawImage(img, sx, y, sigW, sigH);
+    }
+    y += sigH;
+    ctx.strokeStyle = '#9aa7b4'; ctx.beginPath();
+    ctx.moveTo(sx, y); ctx.lineTo(sx+sigW, y); ctx.stroke();
+    y += 22;
+    ctx.fillStyle = '#152230'; ctx.font = '600 14px ' + FONT; ctx.textAlign='center';
+    ctx.fillText('(' + (name || '............................') + ')', W/2, y);
+    y += 20;
+    ctx.fillStyle = '#5c6b7c'; ctx.font = '400 13px ' + FONT;
+    ctx.fillText(role, W/2, y);
+    y += 30;
+  }
+
+  return canvas.toDataURL('image/jpeg', 0.85);
+}
+
 /** ======= toast ======= */
 function showToast(msg, isError, ms){
   const t = document.getElementById('toast');
@@ -448,30 +761,6 @@ function showToast(msg, isError, ms){
   t.classList.toggle('err', !!isError);
   t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'), ms || 2800);
-}
-
-/** ======= เรียก API พร้อมตรวจสอบว่าได้ JSON จริงหรือไม่ =======
- * ปัญหา "Unexpected token '<'" เกิดจากพยายาม parse หน้า HTML (เช่นหน้า sign-in ของ Google
- * หรือหน้า error ของ Apps Script) เป็น JSON — ฟังก์ชันนี้ตรวจสอบก่อนเพื่อแจ้งสาเหตุที่ชัดเจน
- */
-async function callApi(payload){
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(payload)
-  });
-  const raw = await res.text();
-  let json;
-  try{
-    json = JSON.parse(raw);
-  } catch(e){
-    if (raw.trim().startsWith('<')){
-      throw new Error('เซิร์ฟเวอร์ตอบกลับเป็นหน้าเว็บแทนข้อมูล — มักเกิดจากดีพลอยเมนต์ยังไม่อัปเดต หรือสิทธิ์การเข้าถึง Web App ไม่ได้ตั้งเป็น "ทุกคน" กรุณาตรวจสอบการดีพลอยใน Apps Script');
-    }
-    throw new Error('ไม่สามารถอ่านข้อมูลตอบกลับจากเซิร์ฟเวอร์ได้');
-  }
-  if (!json.ok) throw new Error(json.error || 'เกิดข้อผิดพลาดไม่ทราบสาเหตุ');
-  return json.data;
 }
 
 /** ======= ตรวจฟอร์มก่อนส่ง ======= */
@@ -504,41 +793,42 @@ document.getElementById('submitBtn').addEventListener('click', async ()=>{
     return;
   }
   const isoDate = document.getElementById('fDate').value;
-  const payload = {
-    action: 'submit',
-    data: {
-      date: isoDate,
-      dateThai: toThaiDate(isoDate),
-      time: document.getElementById('fTime').value,
-      location: document.getElementById('fLocation').value.trim(),
-      plate: document.getElementById('fPlate').value.trim(),
-      vehicleType: document.getElementById('fVehicleType').value,
-      driverName: document.getElementById('fDriverName').value.trim(),
-      age: document.getElementById('fAge').value.trim(),
-      driverAddress: document.getElementById('fDriverAddress').value.trim(),
-      cargo: document.getElementById('fCargo').value.trim(),
-      origin: document.getElementById('fOrigin').value.trim(),
-      destination: document.getElementById('fDestination').value.trim(),
-      weight: document.getElementById('fWeight').value.trim(),
-      result: getSegVal('segResult'),
-      sticker: getSegVal('segSticker'),
-      inspector1: document.getElementById('fInspector1').value.trim(),
-      inspector2: document.getElementById('fInspector2').value.trim(),
-      driverConfirm: document.getElementById('fDriverConfirm').checked,
-      note: document.getElementById('fNote').value.trim(),
-      lineName: officerName,
-      photos: Object.values(photos)
-    }
+  const data = {
+    date: isoDate,
+    dateThai: toThaiDate(isoDate),
+    time: document.getElementById('fTime').value,
+    location: document.getElementById('fLocation').value.trim(),
+    plate: document.getElementById('fPlate').value.trim(),
+    vehicleType: document.getElementById('fVehicleType').value,
+    driverName: document.getElementById('fDriverName').value.trim(),
+    age: document.getElementById('fAge').value.trim(),
+    driverAddress: document.getElementById('fDriverAddress').value.trim(),
+    cargo: document.getElementById('fCargo').value.trim(),
+    origin: document.getElementById('fOrigin').value.trim(),
+    destination: document.getElementById('fDestination').value.trim(),
+    weight: document.getElementById('fWeight').value.trim(),
+    result: getSegVal('segResult'),
+    sticker: getSegVal('segSticker'),
+    inspector1: document.getElementById('fInspector1').value.trim(),
+    inspector2: document.getElementById('fInspector2').value.trim(),
+    driverConfirm: !sigPads.sig3.isEmpty(),
+    note: document.getElementById('fNote').value.trim(),
+    lineName: officerName,
+    photos: Object.values(photos)
   };
 
   const btn = document.getElementById('submitBtn');
-  btn.disabled = true; btn.textContent = 'กำลังบันทึก…';
+  btn.disabled = true; btn.textContent = 'กำลังสร้างรายงาน…';
   try{
-    const data = await callApi(payload);
-    showToast('บันทึกสำเร็จ ✓ บันทึกรูป ' + data.photoCount + ' รูป');
+    const reportDataUrl = await generateReportImage(data);
+    data.reportImage = reportDataUrl.split(',')[1];
+
+    btn.textContent = 'กำลังบันทึก…';
+    const result = await gsRun('submitInspection', data);
+    showToast('บันทึกสำเร็จ ✓ บันทึกรูป ' + result.photoCount + ' รูป');
     try{
-      localStorage.setItem('tw_lastLocation', payload.data.location);
-      localStorage.setItem('tw_lastInspector1', payload.data.inspector1);
+      localStorage.setItem('tw_lastLocation', data.location);
+      localStorage.setItem('tw_lastInspector1', data.inspector1);
     }catch(e){}
     resetForm();
   } catch(err){
@@ -551,7 +841,6 @@ document.getElementById('submitBtn').addEventListener('click', async ()=>{
 function resetForm(){
   ['fPlate','fDriverName','fAge','fDriverAddress','fCargo','fOrigin','fDestination',
    'fWeight','fInspector2','fNote'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('fDriverConfirm').checked = false;
   document.getElementById('fTime').value = new Date().toTimeString().slice(0,5);
   setupSegmented2Reset();
   updateScaleReadout();
@@ -560,6 +849,7 @@ function resetForm(){
     const img = s.querySelector('img'); if (img) img.remove();
   });
   Object.keys(photos).forEach(k=>delete photos[k]);
+  Object.values(sigPads).forEach(p=>p.clear());
 }
 function setupSegmented2Reset(){
   document.querySelectorAll('#segResult .opt').forEach(o=>o.classList.remove('sel'));
@@ -589,7 +879,7 @@ async function loadHistory(){
   const listEl = document.getElementById('histList');
   listEl.innerHTML = '<div class="empty">กำลังโหลด…</div>';
   try{
-    const rows = await callApi({ action:'getByDate', date: dateThai });
+    const rows = await gsRun('getEntriesByDate', dateThai);
     renderHistory(rows);
   } catch(err){
     listEl.innerHTML = '<div class="empty">โหลดไม่สำเร็จ: ' + err.message + '</div>';
