@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>แอดมิน — บันทึกตรวจสอบน้ำหนักรถบรรทุก</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eef1f5;
+    --panel:#ffffff;
+    --ink:#152230;
+    --ink-dim:#5c6b7c;
+    --line:rgba(21,34,48,0.10);
+    --steel:#2c4a6e;
+    --steel-dark:#17293e;
+    --amber:#c9720a;
+    --danger:#c0342b;
+    --danger-bg:#fdecea;
+    --safe:#1b8a4d;
+    --safe-bg:#e9f7ef;
+    --radius:14px;
+    --shadow:0 6px 22px rgba(21,34,48,0.08);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Sarabun','-apple-system',sans-serif;
+    color:var(--ink); background:var(--bg); min-height:100vh; padding-bottom:60px;
+  }
+  header.top{
+    background:linear-gradient(155deg,var(--steel-dark),var(--steel));
+    color:#fff; padding:20px 20px 46px;
+  }
+  .top-row{display:flex; align-items:center; justify-content:space-between; gap:12px; max-width:1080px; margin:0 auto;}
+  header.top h1{font-size:19px; font-weight:800; margin:0;}
+  header.top p{font-size:12.5px; margin:3px 0 0; color:rgba(255,255,255,0.65);}
+  .back-link{color:rgba(255,255,255,0.8); font-size:12.5px; text-decoration:none; font-weight:600; white-space:nowrap;}
+
+  .wrap{max-width:1080px; margin:-30px auto 0; padding:0 16px;}
+
+  .panel{
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:18px; margin-bottom:16px;
+  }
+  .panel h2{font-size:13px; font-weight:700; color:var(--ink-dim); margin:0 0 12px;}
+
+  .filters{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; align-items:end;}
+  @media (max-width:760px){ .filters{grid-template-columns:1fr 1fr;} }
+  .field label{display:block; font-size:12.5px; font-weight:600; margin-bottom:5px; color:var(--ink);}
+  input[type=text],input[type=date],select{
+    width:100%; padding:10px 11px; border-radius:10px; border:1.5px solid var(--line);
+    background:#fbfcfd; font-family:inherit; font-size:14.5px; color:var(--ink); outline:none;
+  }
+  input:focus,select:focus{border-color:var(--steel); box-shadow:0 0 0 3px rgba(44,74,110,0.13);}
+  .btn{
+    border:none; border-radius:10px; padding:10px 16px; font-family:inherit; font-weight:700;
+    font-size:14px; cursor:pointer; transition:opacity .15s;
+  }
+  .btn:disabled{opacity:.5; cursor:default;}
+  .btn-primary{background:var(--steel); color:#fff;}
+  .btn-ghost{background:#fff; color:var(--steel); border:1.5px solid var(--line);}
+  .btn-pdf{background:var(--danger); color:#fff;}
+  .btn-xlsx{background:var(--safe); color:#fff;}
+  .filter-actions{display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;}
+
+  .stats{display:grid; grid-template-columns:repeat(5,1fr); gap:10px;}
+  @media (max-width:760px){ .stats{grid-template-columns:repeat(2,1fr);} }
+  .stat{
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:14px 16px;
+  }
+  .stat .n{font-family:'JetBrains Mono',monospace; font-size:24px; font-weight:700; color:var(--steel);}
+  .stat.over .n{color:var(--danger);}
+  .stat.ok .n{color:var(--safe);}
+  .stat .l{font-size:11.5px; color:var(--ink-dim); font-weight:600; margin-top:2px;}
+
+  .table-wrap{overflow-x:auto; -webkit-overflow-scrolling:touch;}
+  table{width:100%; border-collapse:collapse; font-size:13.5px; min-width:920px;}
+  th{
+    text-align:left; padding:10px 12px; background:#f4f6f8; color:var(--ink-dim);
+    font-weight:700; font-size:12px; border-bottom:1.5px solid var(--line); white-space:nowrap;
+  }
+  td{padding:10px 12px; border-bottom:1px solid var(--line); vertical-align:top;}
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:#f9fafb;}
+  .plate-cell{font-weight:700;}
+  .badge{padding:3px 9px; border-radius:20px; font-size:11.5px; font-weight:700; color:#fff; white-space:nowrap;}
+  .badge.ok{background:var(--safe);}
+  .badge.over{background:var(--danger);}
+  .link{color:var(--steel); text-decoration:none; font-weight:600; font-size:12.5px;}
+  .empty{text-align:center; color:var(--ink-dim); padding:50px 10px; font-size:14px;}
+  .count-line{font-size:12.5px; color:var(--ink-dim); margin:2px 4px 10px;}
+  .toast{
+    position:fixed; left:16px; right:16px; bottom:22px; z-index:50; max-width:420px; margin:0 auto;
+    background:var(--ink); color:#fff; padding:14px 16px; border-radius:14px;
+    font-size:13.5px; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.3);
+    opacity:0; transform:translateY(10px); transition:all .3s ease; pointer-events:none;
+  }
+  .toast.show{opacity:1; transform:translateY(0);}
+  .toast.err{background:var(--danger);}
+  .spinner{
+    display:inline-block; width:13px; height:13px; border-radius:50%;
+    border:2px solid rgba(255,255,255,0.4); border-top-color:#fff;
+    animation:spin .7s linear infinite; margin-right:6px; vertical-align:-2px;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-row">
+    <div>
+      <h1>สรุป/ค้นหาย้อนหลัง</h1>
+      <p>บันทึกตรวจสอบน้ำหนักรถบรรทุก — สำหรับผู้ดูแลระบบ</p>
+    </div>
+    <a class="back-link" href="?" target="_top">← กลับหน้าบันทึก</a>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="panel">
+    <h2>ตัวกรอง</h2>
+    <div class="filters">
+      <div class="field"><label>ตั้งแต่วันที่</label><input type="date" id="fStart"></div>
+      <div class="field"><label>ถึงวันที่</label><input type="date" id="fEnd"></div>
+      <div class="field"><label>หมายเลขทะเบียน</label><input type="text" id="fPlate" placeholder="ค้นหาบางส่วนได้"></div>
+      <div class="field"><label>ผลการตรวจสอบ</label>
+        <select id="fResult">
+          <option value="ทั้งหมด">ทั้งหมด</option>
+          <option value="ไม่เกิน">ไม่เกิน</option>
+          <option value="เกิน">เกิน</option>
+        </select>
+      </div>
+    </div>
+    <div class="filter-actions">
+      <button class="btn btn-primary" id="searchBtn">ค้นหา</button>
+      <button class="btn btn-ghost" id="todayBtn">วันนี้</button>
+      <button class="btn btn-ghost" id="last7Btn">7 วันล่าสุด</button>
+      <button class="btn btn-ghost" id="last30Btn">30 วันล่าสุด</button>
+      <span style="flex:1"></span>
+      <button class="btn btn-pdf" id="exportPdfBtn">ส่งออก PDF</button>
+      <button class="btn btn-xlsx" id="exportXlsxBtn">ส่งออก Excel</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>สรุปยอด</h2>
+    <div class="stats">
+      <div class="stat"><div class="n" id="statTotal">–</div><div class="l">รายการทั้งหมด</div></div>
+      <div class="stat ok"><div class="n" id="statOk">–</div><div class="l">ไม่เกิน</div></div>
+      <div class="stat over"><div class="n" id="statOver">–</div><div class="l">เกิน</div></div>
+      <div class="stat"><div class="n" id="statPlates">–</div><div class="l">ทะเบียนไม่ซ้ำ</div></div>
+      <div class="stat"><div class="n" id="statAvg">–</div><div class="l">น้ำหนักเฉลี่ย (กก.)</div></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>ผลการค้นหา</h2>
+    <div class="count-line" id="countLine"></div>
+    <div class="table-wrap">
+      <table id="resultTable">
+        <thead>
+          <tr>
+            <th>วันที่</th><th>เวลา</th><th>ทะเบียน</th><th>ลักษณะรถ</th><th>ผู้ขับขี่</th>
+            <th>สินค้า</th><th>น้ำหนัก (กก.)</th><th>ผล</th><th>ผู้ตรวจสอบ</th><th>โฟลเดอร์</th>
+          </tr>
+        </thead>
+        <tbody id="resultBody">
+          <tr><td colspan="10" class="empty">กำลังโหลด…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API_URL = <?!= JSON.stringify(apiUrl) ?>;
+
+function todayIso(){
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function isoMinusDays(n){
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+document.getElementById('fStart').value = isoMinusDays(6);
+document.getElementById('fEnd').value = todayIso();
+
+function showToast(msg, isError, ms){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.toggle('err', !!isError);
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), ms || 3200);
+}
+
+async function callApi(payload){
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload)
+  });
+  const raw = await res.text();
+  let json;
+  try{ json = JSON.parse(raw); }
+  catch(e){
+    if (raw.trim().startsWith('<')){
+      throw new Error('เซิร์ฟเวอร์ตอบกลับเป็นหน้าเว็บแทนข้อมูล — ตรวจสอบว่าดีพลอยเมนต์เป็นเวอร์ชันล่าสุดและสิทธิ์เข้าถึงตั้งเป็น "ทุกคน"');
+    }
+    throw new Error('ไม่สามารถอ่านข้อมูลตอบกลับจากเซิร์ฟเวอร์ได้');
+  }
+  if (!json.ok) throw new Error(json.error || 'เกิดข้อผิดพลาดไม่ทราบสาเหตุ');
+  return json.data;
+}
+
+function currentFilter(){
+  return {
+    startDate: document.getElementById('fStart').value || '',
+    endDate: document.getElementById('fEnd').value || '',
+    plate: document.getElementById('fPlate').value.trim(),
+    result: document.getElementById('fResult').value
+  };
+}
+
+async function runSearch(){
+  const filter = currentFilter();
+  const tbody = document.getElementById('resultBody');
+  tbody.innerHTML = '<tr><td colspan="10" class="empty">กำลังค้นหา…</td></tr>';
+  document.getElementById('countLine').textContent = '';
+  ['statTotal','statOk','statOver','statPlates','statAvg'].forEach(id=>document.getElementById(id).textContent='–');
+  try{
+    const [rows, summary] = await Promise.all([
+      callApi({ action:'search', filter }),
+      callApi({ action:'getSummary', filter })
+    ]);
+    renderTable(rows);
+    document.getElementById('statTotal').textContent = summary.total;
+    document.getElementById('statOk').textContent = summary.okCount;
+    document.getElementById('statOver').textContent = summary.overCount;
+    document.getElementById('statPlates').textContent = summary.uniquePlates;
+    document.getElementById('statAvg').textContent = summary.avgWeight.toLocaleString('th-TH');
+    document.getElementById('countLine').textContent = 'พบ ' + rows.length + ' รายการ';
+  } catch(err){
+    tbody.innerHTML = '<tr><td colspan="10" class="empty">โหลดไม่สำเร็จ: ' + err.message + '</td></tr>';
+  }
+}
+
+function renderTable(rows){
+  const tbody = document.getElementById('resultBody');
+  if (!rows.length){ tbody.innerHTML = '<tr><td colspan="10" class="empty">ไม่พบข้อมูลตามเงื่อนไขที่เลือก</td></tr>'; return; }
+  tbody.innerHTML = rows.map(r=>{
+    const over = r.result === 'เกิน';
+    return '<tr>' +
+      '<td>' + (r.dateThai||'-') + '</td>' +
+      '<td>' + (r.time||'-') + '</td>' +
+      '<td class="plate-cell">' + (r.plate||'-') + '</td>' +
+      '<td>' + (r.vehicleType||'-') + '</td>' +
+      '<td>' + (r.driverName||'-') + '</td>' +
+      '<td>' + (r.cargo||'-') + '</td>' +
+      '<td>' + (r.weight||'-') + '</td>' +
+      '<td><span class="badge ' + (over?'over':'ok') + '">' + (r.result||'-') + '</span></td>' +
+      '<td>' + (r.inspector1||'-') + '</td>' +
+      '<td>' + (r.folderLink ? '<a class="link" href="'+r.folderLink+'" target="_blank">เปิด →</a>' : '-') + '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+document.getElementById('searchBtn').addEventListener('click', runSearch);
+document.getElementById('todayBtn').addEventListener('click', ()=>{
+  document.getElementById('fStart').value = todayIso();
+  document.getElementById('fEnd').value = todayIso();
+  runSearch();
+});
+document.getElementById('last7Btn').addEventListener('click', ()=>{
+  document.getElementById('fStart').value = isoMinusDays(6);
+  document.getElementById('fEnd').value = todayIso();
+  runSearch();
+});
+document.getElementById('last30Btn').addEventListener('click', ()=>{
+  document.getElementById('fStart').value = isoMinusDays(29);
+  document.getElementById('fEnd').value = todayIso();
+  runSearch();
+});
+
+async function doExport(kind){
+  const btn = document.getElementById(kind === 'excel' ? 'exportXlsxBtn' : 'exportPdfBtn');
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>กำลังสร้างไฟล์…';
+  try{
+    const data = await callApi({ action: kind === 'excel' ? 'exportExcel' : 'exportPdf', filter: currentFilter() });
+    showToast('สร้างรายงานสำเร็จ (' + data.count + ' รายการ) กำลังเปิดไฟล์…');
+    window.open(data.url, '_blank');
+  } catch(err){
+    showToast('ส่งออกไม่สำเร็จ: ' + err.message, true, 4500);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+}
+document.getElementById('exportPdfBtn').addEventListener('click', ()=>doExport('pdf'));
+document.getElementById('exportXlsxBtn').addEventListener('click', ()=>doExport('excel'));
+
+runSearch();
+</script>
+</body>
+</html>
