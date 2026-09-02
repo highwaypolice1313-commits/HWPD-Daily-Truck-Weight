@@ -115,7 +115,7 @@
       <h1>สรุป/ค้นหาย้อนหลัง</h1>
       <p>บันทึกตรวจสอบน้ำหนักรถบรรทุก — สำหรับผู้ดูแลระบบ</p>
     </div>
-    <a class="back-link" href="?" target="_top">← กลับหน้าบันทึก</a>
+    <a class="back-link" href="index.html" target="_top">← กลับหน้าบันทึก</a>
   </div>
 </header>
 
@@ -180,7 +180,11 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const API_URL = <?!= JSON.stringify(apiUrl) ?>;
+// เดิม: const API_URL = <?!= JSON.stringify(apiUrl) ?>;  <-- ใช้ได้เฉพาะตอน Apps Script เสิร์ฟหน้านี้เองเท่านั้น
+// ตอนนี้หน้านี้ถูกโฮสต์แบบสถิต (เช่น GitHub Pages) จึงต้องระบุ URL ของ Web App ตรงๆ
+// TODO: แก้เป็น URL ของ Apps Script Web App ที่ deploy แล้ว (ต้องลงท้ายด้วย /exec)
+// และตั้งสิทธิ์การเข้าถึงเป็น "ทุกคน" (Anyone) เพราะเป็นการเรียกข้ามโดเมน
+const API_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
 
 function todayIso(){
   const d = new Date();
