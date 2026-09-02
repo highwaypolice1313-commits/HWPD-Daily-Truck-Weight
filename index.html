@@ -354,7 +354,7 @@
     </div>
 
     <button class="submit-btn" id="submitBtn">บันทึกข้อมูล</button>
-    <a class="admin-link" href="?page=admin" target="_top">เข้าสู่หน้าแอดมิน — ค้นหา/สรุป/ส่งออกรายงาน</a>
+    <a class="admin-link" href="admin.html" target="_top">เข้าสู่หน้าแอดมิน — ค้นหา/สรุป/ส่งออกรายงาน</a>
   </section>
 
   <!-- ===== แท็บประวัติ ===== -->
@@ -371,14 +371,19 @@
 
 <script>
 /** ============================================================
- *  หมายเหตุการแก้บั๊ก:
- *  เวอร์ชันก่อนหน้าฝัง URL ของเว็บแอปผ่านสคริปต์เล็ต <?!= ?> ของ Apps Script
- *  ถ้าดีพลอยผิดขั้นตอน (ไม่ได้ผ่าน createTemplateFromFile) ข้อความสคริปต์เล็ตจะไม่ถูกแทนที่
- *  กลายเป็นโค้ด JS ที่พังตั้งแต่บรรทัดแรก ทำให้ "ทั้งหน้า" ไม่ตอบสนองเลย (ปุ่ม/ช่องกดไม่ได้)
- *  เวอร์ชันนี้เปลี่ยนมาใช้ google.script.run ซึ่งเป็นกลไกมาตรฐานของ Apps Script Web App
- *  เรียกฟังก์ชันฝั่งเซิร์ฟเวอร์ได้โดยตรง ไม่ต้องพึ่ง URL หรือ fetch() อีกต่อไป
+ *  หมายเหตุสถาปัตยกรรม (เวอร์ชันโฮสต์บน GitHub Pages):
+ *  หน้านี้ไม่ได้ถูกเสิร์ฟจาก Apps Script อีกต่อไป (เช่น โฮสต์บน GitHub Pages)
+ *  ดังนั้น "google.script.run" จะใช้งานไม่ได้ (มันมีอยู่เฉพาะหน้าที่ Apps Script เสิร์ฟเองเท่านั้น)
+ *  แทนที่ด้วยการเรียก fetch() ตรงไปยัง URL ของ Web App ที่ deploy ไว้ (.../exec)
+ *  แบบเดียวกับที่ admin.html ใช้อยู่แล้ว — ต้องตั้งค่า API_URL ด้านล่างให้ตรงกับ deployment ของคุณ
+ *  และตอน deploy Apps Script Web App ต้องตั้งสิทธิ์การเข้าถึงเป็น "ทุกคน" (Anyone)
+ *  เพราะเป็นการเรียกข้ามโดเมน (GitHub Pages -> script.google.com)
  * ============================================================ */
 const LIFF_ID = 'ใส่ LIFF ID ตรงนี้';
+
+// TODO: แก้เป็น URL ของ Apps Script Web App ที่ deploy แล้ว (Deploy > New deployment > Web app)
+// ต้องลงท้ายด้วย /exec และตั้งสิทธิ์การเข้าถึงเป็น "ทุกคน" (Anyone)
+const API_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
 
 const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
   'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
@@ -392,18 +397,28 @@ function todayIso(){
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
 }
 
-/** ======= เรียกฟังก์ชันฝั่งเซิร์ฟเวอร์ผ่าน google.script.run แบบ Promise ======= */
-function gsRun(fnName, ...args){
-  return new Promise((resolve, reject)=>{
-    if (!window.google || !google.script || !google.script.run){
-      reject(new Error('ไม่พบ google.script.run — ต้องเปิดหน้านี้ผ่านลิงก์ .../exec ของเว็บแอปเท่านั้น'));
-      return;
-    }
-    google.script.run
-      .withSuccessHandler(resolve)
-      .withFailureHandler(err => reject(new Error((err && err.message) || String(err))))
-      [fnName](...args);
+/** ======= เรียก Apps Script Web App ผ่าน fetch() =======
+ * ใช้ Content-Type: text/plain โดยตั้งใจ (เหมือน admin.html) เพื่อให้เป็น "simple request"
+ * และเบราว์เซอร์จะไม่ส่ง preflight OPTIONS มาก่อน — เพราะ Apps Script Web App ไม่รองรับ OPTIONS
+ * ถ้าส่งเป็น application/json เบราว์เซอร์จะส่ง preflight ก่อนแล้วคำขอจะล้มเหลว
+ */
+async function callApi(payload){
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload)
   });
+  const raw = await res.text();
+  let json;
+  try { json = JSON.parse(raw); }
+  catch (e) {
+    if (raw.trim().startsWith('<')) {
+      throw new Error('เซิร์ฟเวอร์ตอบกลับเป็นหน้าเว็บแทนข้อมูล — ตรวจสอบว่า deploy Apps Script เป็นเวอร์ชันล่าสุดและตั้งสิทธิ์เข้าถึงเป็น "ทุกคน"');
+    }
+    throw new Error('ไม่สามารถอ่านข้อมูลตอบกลับจากเซิร์ฟเวอร์ได้');
+  }
+  if (!json.ok) throw new Error(json.error || 'เกิดข้อผิดพลาดไม่ทราบสาเหตุ');
+  return json.data;
 }
 
 let officerName = '';
@@ -824,7 +839,7 @@ document.getElementById('submitBtn').addEventListener('click', async ()=>{
     data.reportImage = reportDataUrl.split(',')[1];
 
     btn.textContent = 'กำลังบันทึก…';
-    const result = await gsRun('submitInspection', data);
+    const result = await callApi({ action: 'submit', data: data });
     showToast('บันทึกสำเร็จ ✓ บันทึกรูป ' + result.photoCount + ' รูป');
     try{
       localStorage.setItem('tw_lastLocation', data.location);
@@ -879,7 +894,7 @@ async function loadHistory(){
   const listEl = document.getElementById('histList');
   listEl.innerHTML = '<div class="empty">กำลังโหลด…</div>';
   try{
-    const rows = await gsRun('getEntriesByDate', dateThai);
+    const rows = await callApi({ action: 'getByDate', date: dateThai });
     renderHistory(rows);
   } catch(err){
     listEl.innerHTML = '<div class="empty">โหลดไม่สำเร็จ: ' + err.message + '</div>';
