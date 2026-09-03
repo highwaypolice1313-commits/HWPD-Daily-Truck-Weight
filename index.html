@@ -901,7 +901,8 @@ async function generateReportImage(d, onProgress){
   // ---- ความสูงของทุกส่วนยกเว้นรูปภาพ (คงที่ ไม่ขึ้นกับจำนวน/ขนาดรูป) ----
   const HEAD_H = 40 + 7*40 + 40 + 40 + 18;             // หัวข้อ + แถวข้อมูล 7 แถว + แถวผลชั่ง + แถวสติ๊กเกอร์ + ระยะห่าง
   const NOTICE_H = noticeLines.length * 20 + 14;
-  const FOOT_H = 30 + 3*(40 + 44) + 40; // ข้อความรับรอง + แถวลายเซ็นแบบเส้นประ 3 ช่อง (เว้นห่างจากชื่อด้านล่างเพิ่มขึ้น) + ขอบล่าง
+  const SIGN_INTRO_GAP = 30 + 24; // ระยะห่างจากบรรทัด "อ่านให้ฟังฯ" ถึงแถวลงลายมือชื่อแรก (เว้นเพิ่มอีก 1 บรรทัด/enter ตามที่ขอ)
+  const FOOT_H = SIGN_INTRO_GAP + 3*(40 + 44) + 40; // ข้อความรับรอง + แถวลายเซ็นแบบเส้นประ 3 ช่อง (เว้นห่างจากชื่อด้านล่างเพิ่มขึ้น) + ขอบล่าง
   const nonPhotoH = 50 + HEAD_H + NOTICE_H + FOOT_H;
 
   // ---- จัดวางรูปภาพหลักฐานแบบเดียวกับตัวอย่างเอกสารจริง: ----
@@ -946,10 +947,24 @@ async function generateReportImage(d, onProgress){
   ctx.font = '600 15px ' + FONT;
   const col1X = M, col2X = M+210, col2W = 260, col3X = M+470, col4X = M+580, col4W = W-M-580-M+40;
   const rowH = 40;
+  const TABLE_BORDER = '#33404d'; // เส้นตารางสีเข้มแบบตัวอย่างเอกสารจริง (ไม่ใช่เส้นจางๆ)
   ctx.textAlign = 'left';
+
+  // วาดเส้นขอบแนวตั้ง (คั่นคอลัมน์) ของแถวหนึ่งๆ ให้เหมือนตารางจริงที่มีเส้นครบทุกช่อง
+  function drawRowGrid(rowY, hasSecondPair){
+    ctx.strokeStyle = TABLE_BORDER; ctx.lineWidth = 1;
+    ctx.strokeRect(M, rowY, W-2*M, rowH);
+    // เส้นคั่นระหว่างคอลัมน์ป้ายชื่อกับค่าแรก (มีทุกแถว)
+    ctx.beginPath(); ctx.moveTo(col2X, rowY); ctx.lineTo(col2X, rowY+rowH); ctx.stroke();
+    if (hasSecondPair){
+      // เส้นคั่นระหว่างค่าแรกกับป้ายชื่อที่สอง และป้ายชื่อที่สองกับค่าที่สอง
+      ctx.beginPath(); ctx.moveTo(col3X, rowY); ctx.lineTo(col3X, rowY+rowH); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(col4X, rowY); ctx.lineTo(col4X, rowY+rowH); ctx.stroke();
+    }
+  }
+
   rows.forEach(r=>{
-    ctx.strokeStyle = '#d8dee5'; ctx.lineWidth = 1;
-    ctx.strokeRect(M, y, W-2*M, rowH);
+    drawRowGrid(y, !!r[2]);
     ctx.fillStyle = '#5c6b7c'; ctx.font = '700 14px ' + FONT;
     ctx.fillText(r[0], col1X+10, y+rowH/2);
     ctx.fillStyle = '#152230'; ctx.font = '500 15px ' + FONT;
@@ -964,12 +979,11 @@ async function generateReportImage(d, onProgress){
     y += rowH;
   });
 
-  ctx.strokeStyle = '#d8dee5';
-  ctx.strokeRect(M, y, W-2*M, rowH);
+  drawRowGrid(y, false);
   ctx.fillStyle = '#5c6b7c'; ctx.font = '700 14px ' + FONT;
   ctx.fillText('ผลการตรวจสอบ (ชั่ง)', col1X+10, y+rowH/2);
   ctx.fillStyle = '#152230'; ctx.font = '600 15px ' + FONT;
-  ctx.fillText('น้ำหนักรวม ' + (d.weight||'-') + ' กก.', col2X+10, y+rowH/2);
+  ctx.fillText('น้ำหนักรวม ' + (d.weight ? Number(d.weight).toLocaleString('th-TH') : '-') + ' กก.', col2X+10, y+rowH/2);
   ['ไม่เกิน','เกิน'].forEach((label,i)=>{
     const bx = col3X + i*130, by = y+rowH/2-9;
     const active = d.result === label;
@@ -982,7 +996,7 @@ async function generateReportImage(d, onProgress){
   });
   y += rowH;
 
-  ctx.strokeRect(M, y, W-2*M, rowH);
+  drawRowGrid(y, false);
   ctx.fillStyle = '#5c6b7c'; ctx.font = '700 14px ' + FONT;
   ctx.fillText('สติ๊กเกอร์/สัญลักษณ์อื่นใด', col1X+10, y+rowH/2);
   ['มี','ไม่มี'].forEach((label,i)=>{
@@ -1040,7 +1054,7 @@ async function generateReportImage(d, onProgress){
 
   ctx.fillStyle = '#152230'; ctx.font = '500 14px ' + FONT; ctx.textAlign='center';
   ctx.fillText('อ่านให้ฟังแล้วรับว่าถูกต้อง จึงได้ร่วมกันลงลายมือชื่อไว้เป็นหลักฐาน', W/2, y);
-  y += 30;
+  y += SIGN_INTRO_GAP;
 
   const sigDefs = [
     ['sig1', d.inspector1, 'ผู้ตรวจสอบ/บันทึก/ผู้ชั่งน้ำหนัก'],
