@@ -111,6 +111,22 @@
   @media (min-width:860px){
     .card-grid2{display:grid; grid-template-columns:1fr 1fr; gap:14px; align-items:start;}
   }
+  .plate-row{margin-bottom:8px;}
+  .plate-row:last-of-type{margin-bottom:0;}
+  .plate-row-grid{display:grid; grid-template-columns:64px 12px 84px 1fr; gap:6px; align-items:center;}
+  .plate-row-grid input{text-align:center;}
+  .plate-row-grid .plateProvince{text-align:left;}
+  .plate-dash{text-align:center; font-weight:700; color:var(--ink-dim);}
+  .plate-row-remove-wrap{display:flex; justify-content:flex-end; margin-top:4px;}
+  .remove-plate-btn{
+    border:none; background:none; color:var(--danger); font-family:inherit;
+    font-size:12px; font-weight:700; padding:2px 4px; cursor:pointer;
+  }
+  .add-plate-btn{
+    border:1.5px dashed rgba(21,34,48,0.28); background:rgba(255,255,255,0.5);
+    color:var(--steel); font-family:inherit; font-size:13px; font-weight:700;
+    padding:8px 12px; border-radius:12px; margin-top:8px; cursor:pointer; width:100%;
+  }
   .subgroup{
     border:1px dashed rgba(21,34,48,0.18); border-radius:12px; padding:10px 10px 2px;
     margin-top:6px; background:rgba(255,255,255,0.35);
@@ -157,7 +173,6 @@
     flex-direction:column; gap:6px; color:var(--ink-dim); font-size:12.5px; font-weight:600;
     cursor:pointer; text-align:center; padding:6px;
   }
-  /* กรอบขนาดคงที่เท่ากันทุกช่อง: ภาพย่อพอดีอยู่ในกรอบเสมอ ไม่ครอป (object-fit:contain เต็มกรอบ) */
   .photo-slot img{position:static; width:100%; height:100%; object-fit:contain; background:#eef1f5;}
   .photo-slot input{position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%;}
   .photo-slot .icon{font-size:21px;}
@@ -309,10 +324,18 @@
     <div class="card">
       <h2>ข้อมูลรถและผู้ขับขี่</h2>
       <div class="field"><label>หมายเลขทะเบียน</label>
-        <div class="row2">
-          <input type="text" id="fPlateCode" placeholder="หมวดอักษร-เลข เช่น 70-1543">
-          <input type="text" id="fPlateProvince" list="dlProvince" placeholder="จังหวัด (พิมพ์ค้นหาได้)">
+        <div id="plateRows">
+          <div class="plate-row" data-plate-row>
+            <div class="plate-row-grid">
+              <input type="text" inputmode="numeric" maxlength="2" class="plateCode1" placeholder="2 ตัวหน้า">
+              <span class="plate-dash">-</span>
+              <input type="text" inputmode="numeric" maxlength="4" class="plateCode2" placeholder="4 ตัวหลัง">
+              <input type="text" class="plateProvince" list="dlProvince" placeholder="จังหวัด">
+            </div>
+          </div>
         </div>
+        <button type="button" class="add-plate-btn" id="addPlateBtn">+ เพิ่มทะเบียนพ่วง</button>
+        <p class="hint">กรอกเฉพาะตัวเลข เช่น 70 และ 1543 กรณีมีรถพ่วงให้กดปุ่มเพิ่มทะเบียน ระบบจะบันทึกทุกทะเบียนคั่นด้วยจุลภาค เช่น 10-500 ลพบุรี , 10-501 ลพบุรี</p>
       </div>
       <div class="field"><label>ลักษณะรถ</label>
         <select id="fVehicleType">
@@ -349,8 +372,8 @@
       <h2>สินค้าและเส้นทาง</h2>
       <div class="field"><label>สินค้าที่บรรทุก</label><input type="text" id="fCargo" placeholder="เช่น ข้าว"></div>
       <div class="row2">
-        <div class="field"><label>ต้นทาง</label><input type="text" id="fOrigin"></div>
-        <div class="field"><label>ปลายทาง</label><input type="text" id="fDestination"></div>
+        <div class="field"><label>ต้นทาง (จังหวัด)</label><input type="text" id="fOrigin" list="dlProvince" placeholder="จังหวัดต้นทาง"></div>
+        <div class="field"><label>ปลายทาง (จังหวัด)</label><input type="text" id="fDestination" list="dlProvince" placeholder="จังหวัดปลายทาง"></div>
       </div>
     </div>
     </div>
@@ -568,6 +591,34 @@ document.getElementById('fVehicleType').addEventListener('change', function(){
   document.getElementById('fVehicleOther').style.display = this.value === 'อื่นๆ' ? '' : 'none';
 });
 
+/** ======= ทะเบียนรถ: แถวหลัก + เพิ่มทะเบียนพ่วงได้หลายชุด ======= */
+const plateRowsWrap = document.getElementById('plateRows');
+function addPlateRow(){
+  const row = document.createElement('div');
+  row.className = 'plate-row';
+  row.setAttribute('data-plate-row', '');
+  row.innerHTML =
+    '<div class="plate-row-grid">' +
+      '<input type="text" inputmode="numeric" maxlength="2" class="plateCode1" placeholder="2 ตัวหน้า">' +
+      '<span class="plate-dash">-</span>' +
+      '<input type="text" inputmode="numeric" maxlength="4" class="plateCode2" placeholder="4 ตัวหลัง">' +
+      '<input type="text" class="plateProvince" list="dlProvince" placeholder="จังหวัด">' +
+    '</div>' +
+    '<div class="plate-row-remove-wrap"><button type="button" class="remove-plate-btn">ลบทะเบียนนี้ ✕</button></div>';
+  row.querySelector('.remove-plate-btn').addEventListener('click', ()=>row.remove());
+  plateRowsWrap.appendChild(row);
+}
+document.getElementById('addPlateBtn').addEventListener('click', addPlateRow);
+function resetPlateRows(){
+  plateRowsWrap.querySelectorAll('.plate-row').forEach((row, i)=>{
+    if (i === 0){
+      row.querySelectorAll('input').forEach(inp=>inp.value='');
+    } else {
+      row.remove();
+    }
+  });
+}
+
 /** ======= โมดัลความคืบหน้า ======= */
 const progressModal = document.getElementById('progressModal');
 const progressRingFill = document.getElementById('progressRingFill');
@@ -759,10 +810,35 @@ function wrapText(ctx, text, maxWidth){
   if (line) lines.push(line);
   return lines;
 }
+// โหลดฟอนต์ Sarabun ให้พร้อมก่อนวาดลง canvas เสมอ (สำคัญมากบนมือถือที่เน็ตช้า
+// เพราะถ้ายังโหลดไม่เสร็จ canvas จะ fallback ไปใช้ฟอนต์ระบบแทนโดยไม่แจ้งเตือน)
+async function ensureFontsLoaded(){
+  const specs = [
+    '400 16px Sarabun','500 16px Sarabun','600 16px Sarabun',
+    '700 16px Sarabun','800 16px Sarabun'
+  ];
+  try{
+    if (document.fonts && document.fonts.load){
+      await Promise.all(specs.map(s=>document.fonts.load(s)));
+      await document.fonts.ready;
+    }
+  }catch(e){ /* เบราว์เซอร์บางรุ่นไม่รองรับ Font Loading API - ข้ามไปเงียบๆ ใช้ฟอนต์สำรอง */ }
+}
+// วาดรูปภาพให้พอดีอยู่ในกรอบเซลล์เสมอโดยไม่ครอป (ย่อตามสัดส่วนเดิม แล้ววางกึ่งกลาง)
+function drawImageContain(ctx, img, meta, cellX, cellY, cellW, cellH, pad){
+  if (!img) return;
+  const iw = meta.w || cellW, ih = meta.h || cellH;
+  const availW = cellW - pad*2, availH = cellH - pad*2;
+  const scale = Math.min(availW/iw, availH/ih, 1);
+  const w = iw*scale, h = ih*scale;
+  const dx = cellX + (cellW - w)/2, dy = cellY + (cellH - h)/2;
+  ctx.drawImage(img, dx, dy, w, h);
+}
 async function generateReportImage(d, onProgress){
+  await ensureFontsLoaded();
   const W = 1000;
   const A4_H = Math.round(W * (297/210)); // จำกัดความสูงรวมของรายงานให้อยู่ในสัดส่วนกระดาษ A4 (210x297มม.)
-  const FONT = '"Noto Sans Thai","Sarabun",-apple-system,"Segoe UI",sans-serif';
+  const FONT = '"Sarabun",sans-serif';
   const M = 44;
   const photoW = W - 2*M;
 
@@ -780,17 +856,21 @@ async function generateReportImage(d, onProgress){
   const FOOT_H = 30 + 3*(90 + 22 + 20 + 20 + 30) + 40; // ข้อความรับรอง + ลายเซ็น 3 ช่อง + ขอบล่าง
   const nonPhotoH = 50 + HEAD_H + NOTICE_H + FOOT_H;
 
-  // ---- รูปภาพหลักฐานทั้งหมดอยู่ในกรอบสี่เหลี่ยมเดียวกัน จัดเป็นตาราง ย่อพอดีในแต่ละช่อง ไม่ครอป ----
+  // ---- จัดวางรูปภาพหลักฐานแบบเดียวกับตัวอย่างเอกสารจริง: ----
+  // ภาพ "ใบชั่งน้ำหนัก" เป็นภาพใหญ่อยู่ด้านขวา (เอกสารสำคัญ อ่านง่าย)
+  // ภาพอื่น (รถ/ผู้ขับขี่, ใบขับขี่/ทะเบียน, เพิ่มเติม) เรียงซ้อนอยู่ด้านซ้าย
+  // ทุกภาพย่อพอดีในกรอบของตัวเองเสมอ ไม่ครอปภาพ
   const filled = [1,2,3,4].map(i=>photos[i]).filter(Boolean);
-  const gridCols = filled.length <= 1 ? 1 : 2;
-  const gridRows = filled.length ? Math.ceil(filled.length / gridCols) : 0;
-  const MIN_CELL_H = 130;
-  const gridH = gridRows ? Math.max(MIN_CELL_H * gridRows, A4_H - nonPhotoH) : 0;
-  const cellW = photoW / gridCols;
-  const cellH = gridRows ? gridH / gridRows : 0;
+  const bigPhoto = photos[3] || filled[0] || null;
+  const sidePhotos = filled.filter(p=>p !== bigPhoto);
   const CELL_PAD = 10;
+  const MIN_CELL_H = 140;
+  const rightColW = bigPhoto ? (sidePhotos.length ? Math.round(photoW * 0.54) : photoW) : 0;
+  const leftColW = photoW - rightColW;
+  const leftRows = sidePhotos.length;
+  const gridH = bigPhoto ? Math.max(MIN_CELL_H * Math.max(leftRows, 1), A4_H - nonPhotoH) : 0;
 
-  const H = nonPhotoH + gridH + (gridRows ? 14 : 0);
+  const H = nonPhotoH + gridH + (bigPhoto ? 14 : 0);
   const canvas = document.createElement('canvas');
   canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext('2d');
@@ -876,24 +956,34 @@ async function generateReportImage(d, onProgress){
   let doneAsyncSteps = 0;
   function tickProgress(){ doneAsyncSteps++; if (onProgress) onProgress(doneAsyncSteps / totalAsyncSteps); }
 
-  // รูปภาพหลักฐานทั้งหมดอยู่ในกรอบสี่เหลี่ยมเดียวกัน จัดเรียงเป็นตาราง (ย่อพอดีในแต่ละช่อง ไม่ครอป)
-  if (gridRows){
+  // วาดกรอบรูปภาพหลักฐาน: ภาพใบชั่งน้ำหนัก (ใหญ่) ด้านขวา + ภาพอื่นเรียงซ้อนด้านซ้าย เหมือนตัวอย่างเอกสารจริง
+  if (bigPhoto){
     ctx.fillStyle = '#f4f6f8'; ctx.fillRect(M, y, photoW, gridH);
     ctx.strokeStyle = '#d8dee5'; ctx.lineWidth = 1; ctx.strokeRect(M, y, photoW, gridH);
-    for (let i=0; i<filled.length; i++){
-      const p = filled[i];
-      const col = i % gridCols, row = Math.floor(i / gridCols);
-      const cellX = M + col*cellW, cellY = y + row*cellH;
-      if (col > 0){ ctx.beginPath(); ctx.moveTo(cellX, cellY); ctx.lineTo(cellX, cellY+cellH); ctx.strokeStyle='#d8dee5'; ctx.stroke(); }
-      if (row > 0){ ctx.beginPath(); ctx.moveTo(cellX, cellY); ctx.lineTo(cellX+cellW, cellY); ctx.strokeStyle='#d8dee5'; ctx.stroke(); }
+
+    // เส้นแบ่งซ้าย/ขวา
+    if (leftColW > 0){
+      ctx.beginPath(); ctx.moveTo(M+leftColW, y); ctx.lineTo(M+leftColW, y+gridH);
+      ctx.strokeStyle = '#d8dee5'; ctx.stroke();
+    }
+
+    // ภาพใหญ่ด้านขวา (ใบชั่งน้ำหนัก)
+    const bigImg = await loadImageFromDataUrl(bigPhoto.dataUrl);
+    tickProgress();
+    drawImageContain(ctx, bigImg, bigPhoto, M+leftColW, y, rightColW, gridH, CELL_PAD);
+
+    // ภาพอื่นเรียงซ้อนด้านซ้าย
+    const cellH2 = leftRows ? gridH / leftRows : 0;
+    for (let i=0; i<sidePhotos.length; i++){
+      const p = sidePhotos[i];
+      const cellX = M, cellY = y + i*cellH2;
+      if (i > 0){
+        ctx.beginPath(); ctx.moveTo(cellX, cellY); ctx.lineTo(cellX+leftColW, cellY);
+        ctx.strokeStyle = '#d8dee5'; ctx.stroke();
+      }
       const img = await loadImageFromDataUrl(p.dataUrl);
       tickProgress();
-      const iw = p.w || cellW, ih = p.h || cellH;
-      const availW = cellW - CELL_PAD*2, availHc = cellH - CELL_PAD*2;
-      const scale = Math.min(availW/iw, availHc/ih, 1);
-      const w = iw*scale, h = ih*scale;
-      const dx = cellX + (cellW - w)/2, dy = cellY + (cellH - h)/2;
-      if (img) ctx.drawImage(img, dx, dy, w, h);
+      drawImageContain(ctx, img, p, cellX, cellY, leftColW, cellH2, CELL_PAD);
     }
     y += gridH + 14;
   }
@@ -940,7 +1030,7 @@ function showToast(msg, isError, ms){
 
 function validateForm(){
   const required = [
-    ['fDate','วันที่ตรวจสอบ'], ['fPlateCode','หมายเลขทะเบียน'],
+    ['fDate','วันที่ตรวจสอบ'],
     ['fWeight','น้ำหนักรวม'], ['fInspector1','ผู้ตรวจสอบ']
   ];
   let firstInvalid = null;
@@ -949,6 +1039,14 @@ function validateForm(){
     const el = document.getElementById(id);
     if (!el.value.trim()){ el.classList.add('invalid'); if (!firstInvalid) firstInvalid = el; }
   });
+  const firstRow = plateRowsWrap.querySelector('.plate-row');
+  const c1 = firstRow.querySelector('.plateCode1');
+  const c2 = firstRow.querySelector('.plateCode2');
+  c1.classList.remove('invalid'); c2.classList.remove('invalid');
+  if (!c1.value.trim() || !c2.value.trim()){
+    c1.classList.add('invalid'); c2.classList.add('invalid');
+    if (!firstInvalid) firstInvalid = c1;
+  }
   if (firstInvalid){ firstInvalid.scrollIntoView({behavior:'smooth', block:'center'}); firstInvalid.focus(); return false; }
   return true;
 }
@@ -982,9 +1080,15 @@ function buildAddressString(){
   return parts.join(' ');
 }
 function buildPlateString(){
-  const code = document.getElementById('fPlateCode').value.trim();
-  const province = document.getElementById('fPlateProvince').value.trim();
-  return [code, province].filter(Boolean).join(' ');
+  const rows = Array.from(plateRowsWrap.querySelectorAll('.plate-row'));
+  const parts = rows.map(row=>{
+    const c1 = row.querySelector('.plateCode1').value.trim();
+    const c2 = row.querySelector('.plateCode2').value.trim();
+    const province = row.querySelector('.plateProvince').value.trim();
+    const code = [c1, c2].filter(Boolean).join('-');
+    return [code, province].filter(Boolean).join(' ');
+  }).filter(Boolean);
+  return parts.join(' , ');
 }
 function getVehicleTypeValue(){
   const sel = document.getElementById('fVehicleType').value;
@@ -1066,10 +1170,11 @@ document.getElementById('submitBtn').addEventListener('click', async ()=>{
 
 function resetForm(){
   ['fLocThl','fLocKm','flocProvince','flocAmphoe','flocTambon',
-   'fPlateCode','fPlateProvince','fVehicleOther',
+   'fVehicleOther',
    'fDriverName','fAge','fAddrHouseNo','fAddrMoo','faddrProvince','faddrAmphoe','faddrTambon',
    'fCargo','fOrigin','fDestination','fWeight','fInspector2','fNote'
   ].forEach(id=>document.getElementById(id).value='');
+  resetPlateRows();
   document.getElementById('fTime').value = new Date().toTimeString().slice(0,5);
   document.getElementById('fVehicleType').selectedIndex = 0;
   document.getElementById('fVehicleOther').style.display = 'none';
