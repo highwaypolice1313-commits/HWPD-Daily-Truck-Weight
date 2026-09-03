@@ -143,6 +143,9 @@
   .segmented .opt.sel[data-val="เกิน"]{background:var(--danger); border-color:var(--danger); color:#fff;}
   .segmented .opt.sel[data-val="มี"]{background:var(--steel); border-color:var(--steel); color:#fff;}
   .segmented .opt.sel[data-val="ไม่มี"]{background:var(--ink-dim); border-color:var(--ink-dim); color:#fff;}
+  .sticker-detail{display:none; margin-top:9px;}
+  .sticker-detail.show{display:block;}
+  .mobile-nav{display:none;}
 
   .scale-readout{
     display:flex; align-items:baseline; justify-content:space-between;
@@ -252,6 +255,18 @@
     padding:20px;
   }
   .modal-overlay.show{opacity:1; pointer-events:auto;}
+  .search-overlay{position:fixed;inset:0;z-index:90;display:flex;align-items:flex-end;justify-content:center;padding:18px;background:rgba(15,28,43,.45);opacity:0;pointer-events:none;transition:opacity .22s ease;}
+  .search-overlay.show{opacity:1;pointer-events:auto;}
+  .search-sheet{width:min(560px,100%);max-height:88vh;overflow:auto;border-radius:22px 22px 16px 16px;background:#f5f8fb;box-shadow:0 -10px 40px rgba(13,27,42,.3);transform:translateY(24px);transition:transform .28s cubic-bezier(.2,.8,.2,1);}
+  .search-overlay.show .search-sheet{transform:translateY(0);}
+  .search-sheet-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px;}
+  .search-sheet-head h2{margin:0;font-size:18px;}
+  .search-close{width:32px;height:32px;border:0;border-radius:10px;background:#e5ebf1;color:var(--steel);font-size:20px;line-height:1;}
+  .search-fields{padding:0 18px 18px;display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .search-fields .field{margin:0;}.search-fields .field.full{grid-column:1/-1;}
+  .search-actions{display:flex;gap:10px;padding:13px 18px max(16px,env(safe-area-inset-bottom));background:#fff;position:sticky;bottom:0;}
+  .search-actions button{flex:1;border:0;border-radius:12px;padding:12px;font:700 14px 'Sarabun',sans-serif;}
+  .search-reset{color:var(--steel);background:#e8eef4;}.search-submit{color:#fff;background:linear-gradient(145deg,#42678f,#1c3350);}
   .modal-box{background:#fff; border-radius:20px; box-shadow:0 20px 60px rgba(0,0,0,0.35); max-width:400px; width:100%;}
   .progress-box{padding:30px 24px; text-align:center;}
   .progress-ring-wrap{position:relative; width:128px; height:128px; margin:0 auto 18px;}
@@ -270,6 +285,55 @@
   .report-modal-actions{display:flex; gap:10px; padding:14px 18px; flex:none;}
   .btn-report{flex:1; text-align:center; padding:12px 0; border-radius:12px; border:none; font-family:inherit; font-size:14px; font-weight:700; cursor:pointer; text-decoration:none; background:var(--steel); color:#fff;}
   .btn-report-secondary{background:rgba(44,74,110,0.1); color:var(--steel);}
+  .dash-date{display:flex;align-items:center;justify-content:space-between;margin:5px 2px 12px;color:var(--ink-dim);font-size:13px;font-weight:600;}
+  .dash-title{font-size:21px;font-weight:800;color:var(--ink);margin:0 0 2px;}
+  .dash-subtitle{font-size:13px;color:var(--ink-dim);margin:0 0 14px;}
+  .dash-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px;}
+  .dash-stat{border-radius:16px;padding:14px;background:var(--glass);border:1px solid var(--glass-border);box-shadow:var(--shadow);}
+  .dash-stat .dash-num{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:25px;color:var(--steel);line-height:1.1;}
+  .dash-stat .dash-label{font-size:12px;font-weight:600;color:var(--ink-dim);margin-top:4px;}
+  .dash-stat.is-over .dash-num{color:var(--danger);}.dash-stat.is-safe .dash-num{color:var(--safe);}
+  .dash-chart{background:var(--glass);border:1px solid var(--glass-border);border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:var(--shadow);}
+  .dash-chart h2{font-size:13px;margin:0 0 12px;color:var(--ink-dim);}
+  .result-chart{display:flex;align-items:center;gap:18px;min-height:142px;}
+  .donut{--ok:0;--over:0;width:122px;height:122px;flex:none;border-radius:50%;background:conic-gradient(var(--safe) 0 calc(var(--ok) * 1%),var(--danger) calc(var(--ok) * 1%) calc((var(--ok) + var(--over)) * 1%),#dce4ea 0);position:relative;}
+  .donut:after{content:'';position:absolute;inset:23px;border-radius:50%;background:#f4f7f9;box-shadow:inset 0 1px 5px rgba(21,34,48,.08);}
+  .donut-center{position:absolute;z-index:1;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:24px;}
+  .donut-center small{font-family:'Sarabun',sans-serif;font-size:10px;font-weight:600;color:var(--ink-dim);}
+  .chart-key{flex:1;display:grid;gap:9px;}.chart-key-row{display:flex;align-items:center;justify-content:space-between;font-size:13px;}.chart-key-name{display:flex;align-items:center;gap:7px;color:var(--ink-dim);}.chart-dot{width:9px;height:9px;border-radius:50%;}.chart-dot.ok{background:var(--safe);}.chart-dot.over{background:var(--danger);}
+  .hour-chart{height:132px;display:flex;align-items:flex-end;gap:7px;padding:4px 0 21px;border-bottom:1px solid rgba(21,34,48,.12);position:relative;}.hour-bar{flex:1;min-width:10px;max-width:30px;border-radius:7px 7px 2px 2px;background:linear-gradient(180deg,#547b9f,var(--steel));position:relative;transition:height .5s cubic-bezier(.2,.8,.2,1);}.hour-bar.is-over{background:linear-gradient(180deg,#ec7770,var(--danger));}.hour-bar span{position:absolute;top:calc(100% + 5px);left:50%;transform:translateX(-50%);font-size:10px;color:var(--ink-dim);white-space:nowrap;}.dash-empty{padding:42px 8px;text-align:center;color:var(--ink-dim);font-size:13px;}
+  @media (max-width:640px){
+    body{padding-bottom:92px;}
+    header.hero{padding:12px 14px 10px;}
+    .hero-inner{max-width:none;}
+    .hero-badge{width:34px;height:34px;}
+    header.hero h1{font-size:15px;}
+    header.hero p,.admin-btn{display:none;}
+    .tabs{margin-top:10px;}
+    .tabs button{padding:8px 0;font-size:13px;}
+    main{padding:12px 12px 0;}
+    .card{padding:15px 13px;border-radius:16px;}
+    .card-grid2{display:block;}
+    .photo-slot{height:126px;}
+    .mobile-nav{position:fixed;isolation:isolate;display:flex;align-items:flex-end;justify-content:space-around;left:16px;right:16px;bottom:max(12px,env(safe-area-inset-bottom));height:78px;padding:0 9px 10px;z-index:40;border:1px solid rgba(255,255,255,.78);border-radius:26px;background:linear-gradient(135deg,rgba(255,255,255,.94),rgba(226,234,241,.91));box-shadow:0 14px 34px rgba(21,34,48,.24),inset 0 1px 0 rgba(255,255,255,.92);backdrop-filter:blur(22px) saturate(155%);-webkit-backdrop-filter:blur(22px) saturate(155%);}
+    .mobile-nav:before{content:'';position:absolute;z-index:-1;inset:1px;border-radius:25px;background:linear-gradient(110deg,rgba(255,255,255,.5),transparent 42%,rgba(201,114,10,.08));pointer-events:none;}
+    .mobile-nav button,.mobile-nav a{position:relative;width:55px;height:57px;border:0;background:transparent;color:#657484;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px;text-decoration:none;font:600 10.5px 'Sarabun',sans-serif;letter-spacing:.1px;padding:0 0 1px;transition:color .25s ease,transform .25s cubic-bezier(.2,.8,.2,1);}
+    .mobile-nav button:active,.mobile-nav a:active{transform:scale(.88);}
+    .mobile-nav .nav-icon{height:28px;display:flex;align-items:center;justify-content:center;}
+    .mobile-nav .nav-icon svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:transform .35s cubic-bezier(.2,.9,.25,1);}
+    .mobile-nav .active{color:var(--steel);}
+    .mobile-nav .active:after{content:'';position:absolute;bottom:-4px;width:4px;height:4px;border-radius:50%;background:var(--amber);box-shadow:0 0 0 3px rgba(201,114,10,.12);animation:navDot .3s ease both;}
+    .mobile-nav .active .nav-icon svg{transform:translateY(-1px);stroke-width:2.35;}
+    .mobile-nav .nav-add{align-self:flex-start;justify-content:center;width:62px;height:62px;margin-top:-30px;border-radius:50%;background:linear-gradient(145deg,#42678f,#1c3350 62%,#13263a);border:3px solid rgba(255,255,255,.98);color:#fff;box-shadow:0 9px 20px rgba(28,51,80,.42),0 0 0 5px rgba(44,74,110,.1);padding:0;overflow:hidden;}
+    .mobile-nav .nav-add .nav-icon{height:auto;z-index:1;}
+    .mobile-nav .nav-add .nav-icon svg{width:29px;height:29px;stroke-width:1.7;}
+    .mobile-nav .nav-add .nav-label{display:none;}
+    @keyframes navDot{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+    @media (prefers-reduced-motion:reduce){.mobile-nav *{animation:none!important;transition:none!important;}}
+    #tabHist .entry{padding:15px 14px;margin-bottom:12px;}
+    #tabNew .submit-btn{position:sticky;bottom:12px;z-index:10;}
+    .dash-title{font-size:20px;}.result-chart{gap:13px;}.donut{width:112px;height:112px;}.donut:after{inset:21px;}
+  }
 </style>
 </head>
 <body>
@@ -286,7 +350,7 @@
     </div>
     <div class="tabs">
       <button id="tabNewBtn" class="active">บันทึกใหม่</button>
-      <button id="tabHistBtn">ประวัติวันนี้</button>
+      <button id="tabHistBtn">Dashboard</button>
     </div>
   </div>
 </header>
@@ -396,7 +460,11 @@
         <div class="segmented" id="segSticker">
           <div class="opt" data-val="ไม่มี">ไม่มี</div>
           <div class="opt" data-val="มี">มี</div>
-        </div></div>
+        </div>
+        <div class="sticker-detail" id="stickerDetailWrap">
+          <input type="text" id="fStickerName" placeholder="ชื่อสติ๊กเกอร์ หรือชื่อบริษัท">
+        </div>
+      </div>
     </div>
 
     <div class="card">
@@ -459,6 +527,30 @@
     </div>
   </section>
 
+  <!-- ===== Dashboard มือถือ ===== -->
+  <section id="tabDash" style="display:none;">
+    <div class="dash-date"><span id="dashDateLabel"></span><button class="refresh-btn" id="refreshDashBtn">รีเฟรช ⟳</button></div>
+    <h2 class="dash-title">ภาพรวมการตรวจวันนี้</h2>
+    <p class="dash-subtitle">สรุปข้อมูลการชั่งน้ำหนักแบบเรียลไทม์</p>
+    <div class="dash-stats">
+      <div class="dash-stat"><div class="dash-num" id="dashTotal">–</div><div class="dash-label">รายการตรวจ</div></div>
+      <div class="dash-stat is-safe"><div class="dash-num" id="dashOk">–</div><div class="dash-label">น้ำหนักไม่เกิน</div></div>
+      <div class="dash-stat is-over"><div class="dash-num" id="dashOver">–</div><div class="dash-label">น้ำหนักเกิน</div></div>
+      <div class="dash-stat"><div class="dash-num" id="dashAvg">–</div><div class="dash-label">น้ำหนักเฉลี่ย (กก.)</div></div>
+    </div>
+    <div class="dash-chart">
+      <h2>ผลการตรวจสอบ</h2>
+      <div class="result-chart">
+        <div class="donut" id="dashDonut"><div class="donut-center"><span id="dashDonutTotal">0</span><small>รายการ</small></div></div>
+        <div class="chart-key">
+          <div class="chart-key-row"><span class="chart-key-name"><i class="chart-dot ok"></i>ไม่เกิน</span><strong id="dashOkPercent">0%</strong></div>
+          <div class="chart-key-row"><span class="chart-key-name"><i class="chart-dot over"></i>เกิน</span><strong id="dashOverPercent">0%</strong></div>
+        </div>
+      </div>
+    </div>
+    <div class="dash-chart"><h2>จำนวนรายการตามช่วงเวลา</h2><div class="hour-chart" id="dashHourChart"></div></div>
+  </section>
+
   <!-- ===== แท็บประวัติ ===== -->
   <section id="tabHist" style="display:none;">
     <div style="display:flex; justify-content:space-between; align-items:center; margin:6px 2px 12px;">
@@ -468,6 +560,31 @@
     <div id="histList"><div class="empty">กำลังโหลด…</div></div>
   </section>
 </main>
+
+<nav class="mobile-nav" aria-label="เมนูมือถือ">
+  <button class="nav-home active" id="mobileHomeBtn" type="button"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1-1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></span><span>หน้าหลัก</span></button>
+  <button id="mobileSearchBtn" type="button"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/></svg></span><span>ค้นหา</span></button>
+  <button class="nav-add" id="mobileAddBtn" type="button" aria-label="เพิ่มรายงานใหม่"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span><span class="nav-label">เพิ่ม</span></button>
+  <button id="mobileHistoryBtn" type="button"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3.4 2"/></svg></span><span>ประวัติ</span></button>
+  <a href="admin.html" target="_top" aria-label="หน้าแอดมิน"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M4.5 20c1.2-3.7 4-5.5 7.5-5.5s6.3 1.8 7.5 5.5"/></svg></span><span>แอดมิน</span></a>
+</nav>
+
+<div class="search-overlay" id="searchOverlay" aria-hidden="true">
+  <form class="search-sheet" id="searchForm">
+    <div class="search-sheet-head"><h2>ค้นหารายงาน</h2><button class="search-close" id="searchCloseBtn" type="button" aria-label="ปิด">×</button></div>
+    <div class="search-fields">
+      <div class="field"><label>ตั้งแต่วันที่</label><input id="searchStartDate" type="date"></div>
+      <div class="field"><label>ถึงวันที่</label><input id="searchEndDate" type="date"></div>
+      <div class="field full"><label>ทะเบียนรถ</label><input id="searchPlate" type="text" placeholder="เช่น 70-1543 หรือ จังหวัด"></div>
+      <div class="field"><label>ชื่อผู้ขับขี่</label><input id="searchDriver" type="text" placeholder="ชื่อ หรือ นามสกุล"></div>
+      <div class="field"><label>สินค้า</label><input id="searchCargo" type="text" placeholder="เช่น ข้าว"></div>
+      <div class="field"><label>ผลการตรวจ</label><select id="searchResult"><option value="ทั้งหมด">ทั้งหมด</option><option value="ไม่เกิน">ไม่เกิน</option><option value="เกิน">เกิน</option></select></div>
+      <div class="field"><label>สติ๊กเกอร์/บริษัท</label><input id="searchSticker" type="text" placeholder="ชื่อสติ๊กเกอร์ หรือบริษัท"></div>
+      <div class="field full"><label>สถานที่ตรวจ</label><input id="searchLocation" type="text" placeholder="ถนน, กิโลเมตร, จังหวัด"></div>
+    </div>
+    <div class="search-actions"><button class="search-reset" id="searchResetBtn" type="button">ล้างค่า</button><button class="search-submit" type="submit">ค้นหา</button></div>
+  </form>
+</div>
 
 <!-- ดาต้าลิสต์สำหรับจังหวัด/อำเภอ/ตำบล (พิมพ์ค้นหาได้) -->
 <datalist id="dlProvince"></datalist>
@@ -689,11 +806,17 @@ function setupSegmented(id, defaultVal){
       el.querySelectorAll('.opt').forEach(x=>x.classList.remove('sel'));
       o.classList.add('sel');
       if (id === 'segResult') updateScaleReadout();
+      if (id === 'segSticker') updateStickerDetail();
     });
   });
 }
 setupSegmented('segResult','ไม่เกิน');
 setupSegmented('segSticker','ไม่มี');
+function updateStickerDetail(){
+  const hasSticker = getSegVal('segSticker') === 'มี';
+  document.getElementById('stickerDetailWrap').classList.toggle('show', hasSticker);
+  if (!hasSticker) document.getElementById('fStickerName').value = '';
+}
 function getSegVal(id){
   const sel = document.querySelector('#'+id+' .opt.sel');
   return sel ? sel.dataset.val : '';
@@ -1000,7 +1123,8 @@ async function generateReportImage(d, onProgress){
   ctx.fillStyle = '#5c6b7c'; ctx.font = '700 14px ' + FONT;
   ctx.fillText('สติ๊กเกอร์/สัญลักษณ์อื่นใด', col1X+10, y+rowH/2);
   ['มี','ไม่มี'].forEach((label,i)=>{
-    const bx = col2X + i*130, by = y+rowH/2-9;
+    // ให้ช่อง "มี" เริ่มตำแหน่งเดียวกับข้อความ "น้ำหนักรวม" ในแถวเหนือขึ้นไป
+    const bx = (i === 0 ? col2X + 10 : col3X), by = y+rowH/2-9;
     const active = d.sticker === label;
     ctx.fillStyle = active ? '#2c4a6e' : '#ffffff';
     ctx.strokeStyle = '#9aa7b4';
@@ -1008,6 +1132,10 @@ async function generateReportImage(d, onProgress){
     if (active){ ctx.fillStyle='#ffffff'; ctx.font='700 13px '+FONT; ctx.textAlign='center'; ctx.fillText('✓', bx+9, by+10); ctx.textAlign='left'; }
     ctx.fillStyle = '#152230'; ctx.font = '500 14px ' + FONT;
     ctx.fillText(label, bx+24, y+rowH/2);
+    if (label === 'มี' && d.sticker === 'มี' && d.stickerName){
+      ctx.fillStyle = '#152230'; ctx.font = '600 14px ' + FONT;
+      ctx.fillText(': ' + d.stickerName, bx+45, y+rowH/2);
+    }
   });
   y += rowH + 18;
 
@@ -1145,6 +1273,12 @@ function validateForm(){
     c1.classList.add('invalid'); c2.classList.add('invalid');
     if (!firstInvalid) firstInvalid = c1;
   }
+  const stickerName = document.getElementById('fStickerName');
+  stickerName.classList.remove('invalid');
+  if (getSegVal('segSticker') === 'มี' && !stickerName.value.trim()){
+    stickerName.classList.add('invalid');
+    if (!firstInvalid) firstInvalid = stickerName;
+  }
   if (firstInvalid){ firstInvalid.scrollIntoView({behavior:'smooth', block:'center'}); firstInvalid.focus(); return false; }
   return true;
 }
@@ -1199,7 +1333,7 @@ function getVehicleTypeValue(){
 
 document.getElementById('submitBtn').addEventListener('click', async ()=>{
   if (!validateForm()){
-    showToast('กรุณากรอก วันที่ / ทะเบียน / น้ำหนัก / ผู้ตรวจสอบ ให้ครบ', true);
+    showToast('กรุณากรอกข้อมูลที่จำเป็นให้ครบ (หากเลือกมีสติ๊กเกอร์ ให้ระบุชื่อด้วย)', true);
     return;
   }
   const isoDate = document.getElementById('fDate').value;
@@ -1219,6 +1353,7 @@ document.getElementById('submitBtn').addEventListener('click', async ()=>{
     weight: document.getElementById('fWeight').value.trim(),
     result: getSegVal('segResult'),
     sticker: getSegVal('segSticker'),
+    stickerName: document.getElementById('fStickerName').value.trim(),
     inspector1: document.getElementById('fInspector1').value.trim(),
     inspector2: document.getElementById('fInspector2').value.trim(),
     driverConfirm: !sigPads.sig3.isEmpty(),
@@ -1270,7 +1405,7 @@ function resetForm(){
   ['fLocThl','fLocKm','flocProvince','flocAmphoe','flocTambon',
    'fVehicleOther',
    'fDriverName','fAge','fAddrHouseNo','fAddrMoo','faddrProvince','faddrAmphoe','faddrTambon',
-   'fCargo','fOrigin','fDestination','fWeight','fInspector2','fNote'
+   'fCargo','fOrigin','fDestination','fWeight','fStickerName','fInspector2','fNote'
   ].forEach(id=>document.getElementById(id).value='');
   resetPlateRows();
   document.getElementById('fTime').value = new Date().toTimeString().slice(0,5);
@@ -1290,6 +1425,7 @@ function setupSegmented2Reset(){
   document.querySelector('#segResult .opt[data-val="ไม่เกิน"]').classList.add('sel');
   document.querySelectorAll('#segSticker .opt').forEach(o=>o.classList.remove('sel'));
   document.querySelector('#segSticker .opt[data-val="ไม่มี"]').classList.add('sel');
+  updateStickerDetail();
 }
 
 /** ======= แท็บ ======= */
@@ -1297,12 +1433,98 @@ const tabNewBtn = document.getElementById('tabNewBtn');
 const tabHistBtn = document.getElementById('tabHistBtn');
 tabNewBtn.addEventListener('click', ()=>switchTab('new'));
 tabHistBtn.addEventListener('click', ()=>switchTab('hist'));
-function switchTab(t){
+function switchTab(t, skipLoad){
   document.getElementById('tabNew').style.display = t==='new' ? '' : 'none';
   document.getElementById('tabHist').style.display = t==='hist' ? '' : 'none';
+  document.getElementById('tabDash').style.display = t==='dash' ? '' : 'none';
   tabNewBtn.classList.toggle('active', t==='new');
   tabHistBtn.classList.toggle('active', t==='hist');
-  if (t==='hist') loadHistory();
+  if (t==='hist' && !skipLoad) loadHistory();
+  if (t==='dash' && !skipLoad) loadDashboard();
+}
+function setMobileNavActive(id){
+  document.querySelectorAll('.mobile-nav button:not(.nav-add)').forEach(el=>el.classList.toggle('active', el.id === id));
+}
+document.getElementById('mobileAddBtn').addEventListener('click', ()=>{
+  switchTab('new');
+  setMobileNavActive('');
+  window.scrollTo({top:0, behavior:'smooth'});
+});
+document.getElementById('mobileHomeBtn').addEventListener('click', ()=>{
+  switchTab('dash');
+  setMobileNavActive('mobileHomeBtn');
+  window.scrollTo({top:0, behavior:'smooth'});
+});
+document.getElementById('mobileHistoryBtn').addEventListener('click', ()=>{
+  switchTab('hist');
+  setMobileNavActive('mobileHistoryBtn');
+  window.scrollTo({top:0, behavior:'smooth'});
+});
+const searchOverlay = document.getElementById('searchOverlay');
+function openSearch(){ searchOverlay.classList.add('show'); searchOverlay.setAttribute('aria-hidden','false'); }
+function closeSearch(){ searchOverlay.classList.remove('show'); searchOverlay.setAttribute('aria-hidden','true'); }
+document.getElementById('mobileSearchBtn').addEventListener('click', openSearch);
+document.getElementById('searchCloseBtn').addEventListener('click', closeSearch);
+searchOverlay.addEventListener('click', e=>{ if (e.target === searchOverlay) closeSearch(); });
+document.getElementById('searchResetBtn').addEventListener('click', ()=>document.getElementById('searchForm').reset());
+document.getElementById('searchForm').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const filter = {
+    startDate: document.getElementById('searchStartDate').value,
+    endDate: document.getElementById('searchEndDate').value,
+    plate: document.getElementById('searchPlate').value.trim(),
+    driverName: document.getElementById('searchDriver').value.trim(),
+    cargo: document.getElementById('searchCargo').value.trim(),
+    result: document.getElementById('searchResult').value,
+    stickerName: document.getElementById('searchSticker').value.trim(),
+    location: document.getElementById('searchLocation').value.trim()
+  };
+  closeSearch(); switchTab('hist', true); setMobileNavActive('mobileSearchBtn');
+  const listEl = document.getElementById('histList');
+  document.getElementById('histDateLabel').textContent = 'ผลการค้นหา';
+  listEl.innerHTML = '<div class="empty">กำลังค้นหา…</div>';
+  try { renderHistory(await callApi({ action:'search', filter:filter })); }
+  catch(err) { listEl.innerHTML = '<div class="empty">ค้นหาไม่สำเร็จ: ' + err.message + '</div>'; }
+});
+if (window.matchMedia('(max-width: 640px)').matches) switchTab('dash');
+
+/** ======= Dashboard ======= */
+async function loadDashboard(){
+  const isoDate = todayIso();
+  document.getElementById('dashDateLabel').textContent = toThaiDate(isoDate);
+  try { renderDashboard(await callApi({ action:'getByDate', dateIso:isoDate })); }
+  catch(err) { document.getElementById('dashHourChart').innerHTML = '<div class="dash-empty">โหลดข้อมูลไม่สำเร็จ: ' + err.message + '</div>'; }
+}
+document.getElementById('refreshDashBtn').addEventListener('click', loadDashboard);
+function renderDashboard(rows){
+  const total = rows.length;
+  const over = rows.filter(r=>r.result === 'เกิน').length;
+  const ok = total - over;
+  const weights = rows.map(r=>parseFloat(r.weight)).filter(w=>!isNaN(w));
+  const avg = weights.length ? Math.round(weights.reduce((a,b)=>a+b,0)/weights.length) : 0;
+  document.getElementById('dashTotal').textContent = total;
+  document.getElementById('dashOk').textContent = ok;
+  document.getElementById('dashOver').textContent = over;
+  document.getElementById('dashAvg').textContent = avg ? avg.toLocaleString('th-TH') : '–';
+  document.getElementById('dashDonutTotal').textContent = total;
+  const okPct = total ? Math.round(ok * 100 / total) : 0;
+  const overPct = total ? 100 - okPct : 0;
+  document.getElementById('dashOkPercent').textContent = okPct + '%';
+  document.getElementById('dashOverPercent').textContent = overPct + '%';
+  document.getElementById('dashDonut').style.setProperty('--ok', okPct);
+  document.getElementById('dashDonut').style.setProperty('--over', overPct);
+  const buckets = [6,8,10,12,14,16,18,20].map(hour=>({hour:hour,count:0,over:false}));
+  rows.forEach(r=>{
+    const hour = parseInt(String(r.time||'').split(':')[0],10);
+    if (isNaN(hour)) return;
+    const idx = Math.max(0, Math.min(buckets.length-1, Math.floor((hour-6)/2)));
+    buckets[idx].count++;
+    if (r.result === 'เกิน') buckets[idx].over = true;
+  });
+  const max = Math.max(...buckets.map(b=>b.count), 1);
+  document.getElementById('dashHourChart').innerHTML = buckets.map(b=>
+    '<div class="hour-bar ' + (b.over?'is-over':'') + '" style="height:' + Math.max(5,Math.round(b.count/max*100)) + '%" title="' + b.count + ' รายการ"><span>' + String(b.hour).padStart(2,'0') + ':00</span></div>'
+  ).join('');
 }
 
 /** ======= ประวัติวันนี้ =======
@@ -1337,6 +1559,7 @@ function renderHistory(rows){
       '<div class="entry-meta">' +
         'ผู้ขับขี่: ' + (r.driverName||'-') + '<br>' +
         'สินค้า: ' + (r.cargo||'-') + ' · น้ำหนักรวม: ' + (r.weight||'-') + ' กก.' +
+        (r.sticker === 'มี' && r.stickerName ? '<br>สติ๊กเกอร์: ' + r.stickerName : '') +
       '</div>' +
       (r.folderLink || r.reportLink ?
         '<div class="entry-links">' +
