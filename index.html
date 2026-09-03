@@ -761,32 +761,39 @@ function wrapText(ctx, text, maxWidth){
 }
 async function generateReportImage(d, onProgress){
   const W = 1000;
-  let H = 1400; // จะขยายภายหลังตามจำนวน/สัดส่วนภาพจริง
-  let canvas = document.createElement('canvas');
-  canvas.width = W; canvas.height = H;
-  let ctx = canvas.getContext('2d');
+  const A4_H = Math.round(W * (297/210)); // จำกัดความสูงรวมของรายงานให้อยู่ในสัดส่วนกระดาษ A4 (210x297มม.)
   const FONT = '"Noto Sans Thai","Sarabun",-apple-system,"Segoe UI",sans-serif';
   const M = 44;
-
-  // ---- กรอบรูปภาพขนาดคงที่เท่ากันทุกรูป (ย่อภาพให้พอดีอยู่ในกรอบเสมอ ไม่ครอป มีขอบว่างรอบภาพได้) ----
-  const filled = [1,2,3,4].map(i=>photos[i]).filter(Boolean);
   const photoW = W - 2*M;
-  const PHOTO_FRAME_H = 420; // ความสูงกรอบคงที่ต่อรูป (พอดีกับความยาวหน้า A4 เมื่อรวมหลายรูป)
-  let photoBlocks = [];
-  for (const p of filled){
-    const iw = p.w || photoW, ih = p.h || (photoW * 0.75);
-    // contain: ย่อภาพลงตามสัดส่วนจริงให้พอดีอยู่ในกรอบคงที่ (photoW x PHOTO_FRAME_H) โดยไม่ครอป
-    const scale = Math.min(photoW / iw, PHOTO_FRAME_H / ih, 1);
-    const w = iw * scale, h = ih * scale;
-    photoBlocks.push({ frameH: PHOTO_FRAME_H, w, h });
-  }
-  const photosHeight = photoBlocks.reduce((s,b)=>s + b.frameH + 14, 0);
 
-  const sigBlockHeight = 3 * (90 + 22 + 20 + 20 + 30);
-  H = 430 + photosHeight + 90 + sigBlockHeight + 60;
-  canvas = document.createElement('canvas');
+  const notice = 'อนึ่งในการตรวจสอบครั้งนี้เจ้าหน้าที่พนักงานตำรวจชุดตรวจสอบได้กระทำไปตามอำนาจหน้าที่ ' +
+    'มิได้ทำร้ายร่างกาย บังคับขู่เข็ญ แนะนำ หลอกลวง ชักจูง หรือให้สัญญาอย่างหนึ่งอย่างใด ' +
+    'มิได้เรียกรับหรือยอมรับหรือจะรับทรัพย์สินหรือประโยชน์อื่นใดจากผู้ขับขี่ ' +
+    'และมิได้ทำให้ทรัพย์สินเสียหายหรือเสื่อมค่าแต่อย่างใด เจ้าพนักงานผู้ตรวจสอบได้ให้ความเป็นธรรมดีแล้ว';
+  const measureCtx = document.createElement('canvas').getContext('2d');
+  measureCtx.font = '400 13px ' + FONT;
+  const noticeLines = wrapText(measureCtx, notice, W - 2*M);
+
+  // ---- ความสูงของทุกส่วนยกเว้นรูปภาพ (คงที่ ไม่ขึ้นกับจำนวน/ขนาดรูป) ----
+  const HEAD_H = 40 + 7*40 + 40 + 40 + 18;             // หัวข้อ + แถวข้อมูล 7 แถว + แถวผลชั่ง + แถวสติ๊กเกอร์ + ระยะห่าง
+  const NOTICE_H = noticeLines.length * 20 + 14;
+  const FOOT_H = 30 + 3*(90 + 22 + 20 + 20 + 30) + 40; // ข้อความรับรอง + ลายเซ็น 3 ช่อง + ขอบล่าง
+  const nonPhotoH = 50 + HEAD_H + NOTICE_H + FOOT_H;
+
+  // ---- รูปภาพหลักฐานทั้งหมดอยู่ในกรอบสี่เหลี่ยมเดียวกัน จัดเป็นตาราง ย่อพอดีในแต่ละช่อง ไม่ครอป ----
+  const filled = [1,2,3,4].map(i=>photos[i]).filter(Boolean);
+  const gridCols = filled.length <= 1 ? 1 : 2;
+  const gridRows = filled.length ? Math.ceil(filled.length / gridCols) : 0;
+  const MIN_CELL_H = 130;
+  const gridH = gridRows ? Math.max(MIN_CELL_H * gridRows, A4_H - nonPhotoH) : 0;
+  const cellW = photoW / gridCols;
+  const cellH = gridRows ? gridH / gridRows : 0;
+  const CELL_PAD = 10;
+
+  const H = nonPhotoH + gridH + (gridRows ? 14 : 0);
+  const canvas = document.createElement('canvas');
   canvas.width = W; canvas.height = H;
-  ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d');
 
   ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,W,H);
   ctx.textBaseline = 'middle';
@@ -862,11 +869,6 @@ async function generateReportImage(d, onProgress){
   y += rowH + 18;
 
   ctx.fillStyle = '#5c6b7c'; ctx.font = '400 13px ' + FONT;
-  const notice = 'อนึ่งในการตรวจสอบครั้งนี้เจ้าหน้าที่พนักงานตำรวจชุดตรวจสอบได้กระทำไปตามอำนาจหน้าที่ ' +
-    'มิได้ทำร้ายร่างกาย บังคับขู่เข็ญ แนะนำ หลอกลวง ชักจูง หรือให้สัญญาอย่างหนึ่งอย่างใด ' +
-    'มิได้เรียกรับหรือยอมรับหรือจะรับทรัพย์สินหรือประโยชน์อื่นใดจากผู้ขับขี่ ' +
-    'และมิได้ทำให้ทรัพย์สินเสียหายหรือเสื่อมค่าแต่อย่างใด เจ้าพนักงานผู้ตรวจสอบได้ให้ความเป็นธรรมดีแล้ว';
-  const noticeLines = wrapText(ctx, notice, W-2*M);
   noticeLines.forEach(line=>{ ctx.fillText(line, M, y); y += 20; });
   y += 14;
 
@@ -874,18 +876,26 @@ async function generateReportImage(d, onProgress){
   let doneAsyncSteps = 0;
   function tickProgress(){ doneAsyncSteps++; if (onProgress) onProgress(doneAsyncSteps / totalAsyncSteps); }
 
-  // วางรูปภาพแบบคอลัมน์เดียว ในกรอบขนาดคงที่เท่ากันทุกรูป (letterbox กึ่งกลาง ไม่ครอป)
-  for (let i=0; i<filled.length; i++){
-    const p = filled[i];
-    const block = photoBlocks[i];
-    const img = await loadImageFromDataUrl(p.dataUrl);
-    tickProgress();
-    const cx = M + (photoW - block.w)/2;
-    const cy = y + (block.frameH - block.h)/2;
-    ctx.fillStyle = '#f4f6f8'; ctx.fillRect(M, y, photoW, block.frameH);
-    ctx.strokeStyle = '#d8dee5'; ctx.strokeRect(M, y, photoW, block.frameH);
-    if (img) ctx.drawImage(img, cx, cy, block.w, block.h);
-    y += block.frameH + 14;
+  // รูปภาพหลักฐานทั้งหมดอยู่ในกรอบสี่เหลี่ยมเดียวกัน จัดเรียงเป็นตาราง (ย่อพอดีในแต่ละช่อง ไม่ครอป)
+  if (gridRows){
+    ctx.fillStyle = '#f4f6f8'; ctx.fillRect(M, y, photoW, gridH);
+    ctx.strokeStyle = '#d8dee5'; ctx.lineWidth = 1; ctx.strokeRect(M, y, photoW, gridH);
+    for (let i=0; i<filled.length; i++){
+      const p = filled[i];
+      const col = i % gridCols, row = Math.floor(i / gridCols);
+      const cellX = M + col*cellW, cellY = y + row*cellH;
+      if (col > 0){ ctx.beginPath(); ctx.moveTo(cellX, cellY); ctx.lineTo(cellX, cellY+cellH); ctx.strokeStyle='#d8dee5'; ctx.stroke(); }
+      if (row > 0){ ctx.beginPath(); ctx.moveTo(cellX, cellY); ctx.lineTo(cellX+cellW, cellY); ctx.strokeStyle='#d8dee5'; ctx.stroke(); }
+      const img = await loadImageFromDataUrl(p.dataUrl);
+      tickProgress();
+      const iw = p.w || cellW, ih = p.h || cellH;
+      const availW = cellW - CELL_PAD*2, availHc = cellH - CELL_PAD*2;
+      const scale = Math.min(availW/iw, availHc/ih, 1);
+      const w = iw*scale, h = ih*scale;
+      const dx = cellX + (cellW - w)/2, dy = cellY + (cellH - h)/2;
+      if (img) ctx.drawImage(img, dx, dy, w, h);
+    }
+    y += gridH + 14;
   }
 
   ctx.fillStyle = '#152230'; ctx.font = '500 14px ' + FONT; ctx.textAlign='center';
