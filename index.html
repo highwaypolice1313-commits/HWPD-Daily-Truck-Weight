@@ -800,12 +800,29 @@ async function loadImageFromDataUrl(dataUrl){
     img.src = dataUrl;
   });
 }
+// ตัดบรรทัดโดยแบ่งเป็น "คำ" ก่อน (ใช้ Intl.Segmenter ถ้าเบราว์เซอร์รองรับ) แล้วค่อยนำคำมาต่อทีละคำ
+// จนกว่าจะเกินความกว้างที่กำหนด วิธีนี้ป้องกันคำไทยขาดกลางคำ เช่น "อย่าง" ถูกตัดเป็น "อย่" + "าง"
+// ถ้าเบราว์เซอร์ไม่รองรับ Intl.Segmenter จะ fallback ไปตัดทีละตัวอักษรแบบเดิม (มีโอกาสคำขาดได้)
 function wrapText(ctx, text, maxWidth){
+  const str = String(text || '');
+  let units = null;
+  if (typeof Intl !== 'undefined' && Intl.Segmenter){
+    try{
+      const seg = new Intl.Segmenter('th', { granularity: 'word' });
+      units = Array.from(seg.segment(str), s => s.segment);
+    }catch(e){ units = null; }
+  }
+  if (!units) units = str.split(''); // fallback: ตัดทีละตัวอักษร
+
   const lines = []; let line = '';
-  for (const ch of String(text || '')){
-    const test = line + ch;
-    if (ctx.measureText(test).width > maxWidth && line){ lines.push(line); line = ch; }
-    else line = test;
+  for (const u of units){
+    const test = line + u;
+    if (ctx.measureText(test).width > maxWidth && line){
+      lines.push(line);
+      line = (u.trim() === '') ? '' : u; // ไม่ให้บรรทัดใหม่ขึ้นต้นด้วยช่องว่างลอยๆ
+    } else {
+      line = test;
+    }
   }
   if (line) lines.push(line);
   return lines;
@@ -884,7 +901,7 @@ async function generateReportImage(d, onProgress){
   // ---- ความสูงของทุกส่วนยกเว้นรูปภาพ (คงที่ ไม่ขึ้นกับจำนวน/ขนาดรูป) ----
   const HEAD_H = 40 + 7*40 + 40 + 40 + 18;             // หัวข้อ + แถวข้อมูล 7 แถว + แถวผลชั่ง + แถวสติ๊กเกอร์ + ระยะห่าง
   const NOTICE_H = noticeLines.length * 20 + 14;
-  const FOOT_H = 30 + 3*(34 + 44) + 40; // ข้อความรับรอง + แถวลายเซ็นแบบเส้นประ 3 ช่อง + ขอบล่าง
+  const FOOT_H = 30 + 3*(40 + 44) + 40; // ข้อความรับรอง + แถวลายเซ็นแบบเส้นประ 3 ช่อง (เว้นห่างจากชื่อด้านล่างเพิ่มขึ้น) + ขอบล่าง
   const nonPhotoH = 50 + HEAD_H + NOTICE_H + FOOT_H;
 
   // ---- จัดวางรูปภาพหลักฐานแบบเดียวกับตัวอย่างเอกสารจริง: ----
@@ -1046,11 +1063,20 @@ async function generateReportImage(d, onProgress){
     ctx.fillText('(ลงชื่อ)', labelX, baseY);
 
     // แสดงยศไว้ด้านหน้าลายเซ็น (แทนที่จะรวมไว้กับชื่อด้านล่างเหมือนเดิม)
+    // จำกัดความกว้างของยศไม่ให้เกิน RANK_MAX_W เสมอ (ยศยาวเช่น "ว่าที่ ร.ต.ต." จะถูกย่อขนาดฟอนต์ลงอัตโนมัติ)
+    // เพื่อไม่ให้ไปเบียดพื้นที่เส้นลงลายมือชื่อ และยังคงอยู่บรรทัดเดียวกับ "(ลงชื่อ)" เสมอ
     let sigLineX1 = lineX1;
     if (rank){
-      ctx.fillStyle = '#152230'; ctx.font = '600 14px ' + FONT;
+      const RANK_MAX_W = 92;
+      let rankFontPx = 14;
+      ctx.font = '600 ' + rankFontPx + 'px ' + FONT;
+      while (ctx.measureText(rank).width > RANK_MAX_W && rankFontPx > 10){
+        rankFontPx -= 1;
+        ctx.font = '600 ' + rankFontPx + 'px ' + FONT;
+      }
+      ctx.fillStyle = '#152230';
       ctx.fillText(rank, lineX1, baseY);
-      sigLineX1 = lineX1 + ctx.measureText(rank).width + 8;
+      sigLineX1 = lineX1 + Math.min(ctx.measureText(rank).width, RANK_MAX_W) + 8;
     }
 
     ctx.setLineDash([2, 3]);
@@ -1074,7 +1100,8 @@ async function generateReportImage(d, onProgress){
     ctx.fillStyle = '#152230'; ctx.font = '700 14px ' + FONT; ctx.textAlign = 'left';
     ctx.fillText(role, roleX, baseY);
 
-    y += 34;
+    // เว้นระยะจากบรรทัดยศ/ลายเซ็น ลงมาถึงบรรทัดชื่อในวงเล็บให้ห่างขึ้น กันไม่ให้ยศดูเหมือนไหลไปชนชื่อด้านล่าง
+    y += 40;
     ctx.fillStyle = '#152230'; ctx.font = '600 14px ' + FONT; ctx.textAlign = 'center';
     ctx.fillText('(' + (name || '............................') + ')', (lineX1 + lineX2) / 2, y);
 
