@@ -117,6 +117,12 @@
     .date-time-row{grid-template-columns:1fr;gap:10px;}
     .date-time-row input[type=date],.date-time-row input[type=time]{min-width:0;padding:11px 12px;font-size:15.5px;letter-spacing:normal;}
     .search-fields{grid-template-columns:1fr;}
+    /* Hard viewport cap: fixes the iOS WebKit date/time control overflowing its grid. */
+    input[type=date],input[type=time]{
+      display:block; width:100%!important; max-width:calc(100vw - 56px)!important;
+      min-width:0!important; min-inline-size:0!important;
+    }
+    .date-time-row,.search-fields{width:100%;min-width:0;overflow:hidden;}
   }
   @media (min-width:860px){
     .card-grid2{display:grid; grid-template-columns:1fr 1fr; gap:14px; align-items:start;}
