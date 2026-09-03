@@ -853,7 +853,7 @@ async function generateReportImage(d, onProgress){
   // ---- ความสูงของทุกส่วนยกเว้นรูปภาพ (คงที่ ไม่ขึ้นกับจำนวน/ขนาดรูป) ----
   const HEAD_H = 40 + 7*40 + 40 + 40 + 18;             // หัวข้อ + แถวข้อมูล 7 แถว + แถวผลชั่ง + แถวสติ๊กเกอร์ + ระยะห่าง
   const NOTICE_H = noticeLines.length * 20 + 14;
-  const FOOT_H = 30 + 3*(90 + 22 + 20 + 20 + 30) + 40; // ข้อความรับรอง + ลายเซ็น 3 ช่อง + ขอบล่าง
+  const FOOT_H = 30 + 3*(34 + 44) + 40; // ข้อความรับรอง + แถวลายเซ็นแบบเส้นประ 3 ช่อง + ขอบล่าง
   const nonPhotoH = 50 + HEAD_H + NOTICE_H + FOOT_H;
 
   // ---- จัดวางรูปภาพหลักฐานแบบเดียวกับตัวอย่างเอกสารจริง: ----
@@ -997,24 +997,46 @@ async function generateReportImage(d, onProgress){
     ['sig2', d.inspector2, 'ผู้ตรวจสอบ (คนที่ 2)'],
     ['sig3', d.driverName, 'ผู้ขับรถ/ร่วมตรวจสอบ']
   ];
-  const sigW = 280, sigH = 90;
+  // ---- แถวลายเซ็นแบบเดียวกับแบบฟอร์มกระดาษจริง: ----
+  // "(ลงชื่อ)…………[ลายเซ็นวางทับเส้นประ]…………ตำแหน่ง" อยู่บรรทัดเดียวกัน
+  // แล้วมี "(ชื่อ-นามสกุล)" อยู่กึ่งกลางใต้เส้นประในบรรทัดถัดไป
+  const labelX = W/2 - 250;
+  const lineX1 = labelX + 78;
+  const lineW = 230;
+  const lineX2 = lineX1 + lineW;
+  const roleX = lineX2 + 12;
   for (const [key, name, role] of sigDefs){
-    const sx = W/2 - sigW/2;
+    const baseY = y + 8;
+
+    ctx.fillStyle = '#152230'; ctx.font = '500 15px ' + FONT; ctx.textAlign = 'left';
+    ctx.fillText('(ลงชื่อ)', labelX, baseY);
+
+    ctx.setLineDash([2, 3]);
+    ctx.strokeStyle = '#9aa7b4'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(lineX1, baseY + 9); ctx.lineTo(lineX2, baseY + 9); ctx.stroke();
+    ctx.setLineDash([]);
+
     const pad = sigPads[key];
     if (!pad.isEmpty()){
       const img = await loadImageFromDataUrl(pad.toDataUrl());
-      if (img) ctx.drawImage(img, sx, y, sigW, sigH);
+      if (img){
+        const availW = lineW - 12, availH = 42;
+        const scale = Math.min(availW / img.width, availH / img.height, 1);
+        const w = img.width * scale, h = img.height * scale;
+        const dx = lineX1 + (lineW - w) / 2, dy = baseY - h + 4;
+        ctx.drawImage(img, dx, dy, w, h);
+      }
     }
     tickProgress();
-    y += sigH;
-    ctx.strokeStyle = '#9aa7b4'; ctx.beginPath(); ctx.moveTo(sx, y); ctx.lineTo(sx+sigW, y); ctx.stroke();
-    y += 22;
-    ctx.fillStyle = '#152230'; ctx.font = '600 14px ' + FONT; ctx.textAlign='center';
-    ctx.fillText('(' + (name || '............................') + ')', W/2, y);
-    y += 20;
-    ctx.fillStyle = '#5c6b7c'; ctx.font = '400 13px ' + FONT;
-    ctx.fillText(role, W/2, y);
-    y += 30;
+
+    ctx.fillStyle = '#152230'; ctx.font = '700 14px ' + FONT; ctx.textAlign = 'left';
+    ctx.fillText(role, roleX, baseY);
+
+    y += 34;
+    ctx.fillStyle = '#152230'; ctx.font = '600 14px ' + FONT; ctx.textAlign = 'center';
+    ctx.fillText('(' + (name || '............................') + ')', (lineX1 + lineX2) / 2, y);
+
+    y += 44;
   }
 
   return canvas.toDataURL('image/jpeg', 0.85);
