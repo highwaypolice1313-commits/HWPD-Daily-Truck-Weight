@@ -1048,8 +1048,9 @@ async function generateReportImage(d, onProgress){
     ['sig3', d.driverName, 'ผู้ขับรถ/ร่วมตรวจสอบ']
   ];
   // ---- แถวลายเซ็นแบบเดียวกับแบบฟอร์มกระดาษจริง: ----
-  // "(ลงชื่อ) [ยศ] …………[ลายเซ็นวางทับเส้นประ]…………ตำแหน่ง" อยู่บรรทัดเดียวกัน
-  // แล้วมี "(ชื่อ-นามสกุล ไม่รวมยศ)" อยู่กึ่งกลางใต้เส้นประในบรรทัดถัดไป
+  // "(ลงชื่อ) …………[ลายเซ็นวางทับเส้นประ]…………ตำแหน่ง" อยู่บรรทัดเดียวกัน
+  // แล้วมี "(ยศ ชื่อ-นามสกุล)" อยู่กึ่งกลางใต้เส้นประในบรรทัดถัดไป โดยความกว้างของวงเล็บ
+  // จะถูกปรับขนาดฟอนต์ให้พอดี "เท่ากับ" ความยาวของเส้นประด้านบนเสมอ (ไม่ล้น ไม่สั้นเกินไป)
   const labelX = W/2 - 250;
   const lineX1 = labelX + 78;
   const lineW = 230;
@@ -1057,41 +1058,26 @@ async function generateReportImage(d, onProgress){
   const roleX = lineX2 + 12;
   for (const [key, fullName, role] of sigDefs){
     const { rank, name } = splitRankName(fullName);
+    const caption = '(' + (rank ? rank + ' ' : '') + (name || '..........................') + ')';
     const baseY = y + 8;
 
     ctx.fillStyle = '#152230'; ctx.font = '500 15px ' + FONT; ctx.textAlign = 'left';
     ctx.fillText('(ลงชื่อ)', labelX, baseY);
 
-    // แสดงยศไว้ด้านหน้าลายเซ็น (แทนที่จะรวมไว้กับชื่อด้านล่างเหมือนเดิม)
-    // จำกัดความกว้างของยศไม่ให้เกิน RANK_MAX_W เสมอ (ยศยาวเช่น "ว่าที่ ร.ต.ต." จะถูกย่อขนาดฟอนต์ลงอัตโนมัติ)
-    // เพื่อไม่ให้ไปเบียดพื้นที่เส้นลงลายมือชื่อ และยังคงอยู่บรรทัดเดียวกับ "(ลงชื่อ)" เสมอ
-    let sigLineX1 = lineX1;
-    if (rank){
-      const RANK_MAX_W = 92;
-      let rankFontPx = 14;
-      ctx.font = '600 ' + rankFontPx + 'px ' + FONT;
-      while (ctx.measureText(rank).width > RANK_MAX_W && rankFontPx > 10){
-        rankFontPx -= 1;
-        ctx.font = '600 ' + rankFontPx + 'px ' + FONT;
-      }
-      ctx.fillStyle = '#152230';
-      ctx.fillText(rank, lineX1, baseY);
-      sigLineX1 = lineX1 + Math.min(ctx.measureText(rank).width, RANK_MAX_W) + 8;
-    }
-
+    // เส้นประสำหรับลงลายมือชื่อ เต็มความกว้าง lineX1–lineX2 เสมอ (ไม่ถูกยศแทรกแบ่งพื้นที่อีกต่อไป)
     ctx.setLineDash([2, 3]);
     ctx.strokeStyle = '#9aa7b4'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(sigLineX1, baseY + 9); ctx.lineTo(lineX2, baseY + 9); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(lineX1, baseY + 9); ctx.lineTo(lineX2, baseY + 9); ctx.stroke();
     ctx.setLineDash([]);
 
     const pad = sigPads[key];
     if (!pad.isEmpty()){
       const img = await loadImageFromDataUrl(pad.toDataUrl());
       if (img){
-        const availW = (lineX2 - sigLineX1) - 12, availH = 42;
+        const availW = lineW - 12, availH = 42;
         const scale = Math.min(availW / img.width, availH / img.height, 1);
         const w = img.width * scale, h = img.height * scale;
-        const dx = sigLineX1 + ((lineX2 - sigLineX1) - w) / 2, dy = baseY - h + 4;
+        const dx = lineX1 + (lineW - w) / 2, dy = baseY - h + 4;
         ctx.drawImage(img, dx, dy, w, h);
       }
     }
@@ -1100,10 +1086,17 @@ async function generateReportImage(d, onProgress){
     ctx.fillStyle = '#152230'; ctx.font = '700 14px ' + FONT; ctx.textAlign = 'left';
     ctx.fillText(role, roleX, baseY);
 
-    // เว้นระยะจากบรรทัดยศ/ลายเซ็น ลงมาถึงบรรทัดชื่อในวงเล็บให้ห่างขึ้น กันไม่ให้ยศดูเหมือนไหลไปชนชื่อด้านล่าง
+    // บรรทัดยศ+ชื่อในวงเล็บ วางกึ่งกลางใต้เส้นประ โดยปรับขนาดฟอนต์ลงอัตโนมัติ
+    // จนกว่าความกว้างของข้อความจะพอดี "เท่ากับ" ความยาวเส้นประด้านบน (lineW)
     y += 40;
-    ctx.fillStyle = '#152230'; ctx.font = '600 14px ' + FONT; ctx.textAlign = 'center';
-    ctx.fillText('(' + (name || '............................') + ')', (lineX1 + lineX2) / 2, y);
+    let captionFontPx = 14;
+    ctx.font = '600 ' + captionFontPx + 'px ' + FONT;
+    while (ctx.measureText(caption).width > lineW && captionFontPx > 9){
+      captionFontPx -= 1;
+      ctx.font = '600 ' + captionFontPx + 'px ' + FONT;
+    }
+    ctx.fillStyle = '#152230'; ctx.textAlign = 'center';
+    ctx.fillText(caption, (lineX1 + lineX2) / 2, y);
 
     y += 44;
   }
