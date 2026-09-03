@@ -97,6 +97,10 @@
     font-family:inherit; font-size:15.5px; color:var(--ink);
     outline:none; transition:border-color .2s, box-shadow .2s;
   }
+  /* iOS Safari gives date/time controls an intrinsic minimum width unless it is reset. */
+  input[type=date],input[type=time]{
+    min-width:0; min-inline-size:0; max-width:100%; max-inline-size:100%;
+  }
   input:focus,textarea:focus,select:focus{
     border-color:var(--steel); box-shadow:0 0 0 3px rgba(44,74,110,0.15);
   }
@@ -105,6 +109,7 @@
   .row2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
   .row3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;}
   .row4{display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:10px;}
+  .date-time-row > .field,.search-fields > .field{min-width:0;}
   @media (max-width:640px){
     .row3{grid-template-columns:1fr 1fr;}
     .row4{grid-template-columns:1fr 1fr;}
