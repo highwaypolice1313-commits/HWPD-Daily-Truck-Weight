@@ -810,6 +810,36 @@ function wrapText(ctx, text, maxWidth){
   if (line) lines.push(line);
   return lines;
 }
+// ===== ฟังก์ชันแยก "ยศ" ออกจาก "ชื่อ-นามสกุล" ที่กรอกไว้ในช่องผู้ตรวจสอบ (เช่น "ด.ต.สยาม เผือกดี") =====
+// เรียงรายการยศจากยาวไปสั้น เพื่อกันจับคำผิด (เช่น "ว่าที่ ร.ต.ต." ต้องจับก่อน "ร.ต.ต.")
+const RANK_PATTERNS = [
+  'ว่าที่พันตำรวจเอก','ว่าที่พันตำรวจโท','ว่าที่พันตำรวจตรี',
+  'ว่าที่ร้อยตำรวจเอก','ว่าที่ร้อยตำรวจโท','ว่าที่ร้อยตำรวจตรี',
+  'ว่าที่ พ.ต.อ.','ว่าที่ พ.ต.ท.','ว่าที่ พ.ต.ต.',
+  'ว่าที่ ร.ต.อ.','ว่าที่ ร.ต.ท.','ว่าที่ ร.ต.ต.',
+  'ว่าที่พ.ต.อ.','ว่าที่พ.ต.ท.','ว่าที่พ.ต.ต.',
+  'ว่าที่ร.ต.อ.','ว่าที่ร.ต.ท.','ว่าที่ร.ต.ต.',
+  'พลตำรวจเอก','พลตำรวจโท','พลตำรวจตรี',
+  'พันตำรวจเอก','พันตำรวจโท','พันตำรวจตรี',
+  'ร้อยตำรวจเอก','ร้อยตำรวจโท','ร้อยตำรวจตรี',
+  'นายดาบตำรวจ','จ่าสิบตำรวจ',
+  'สิบตำรวจเอก','สิบตำรวจโท','สิบตำรวจตรี',
+  'พล.ต.อ.','พล.ต.ท.','พล.ต.ต.',
+  'พ.ต.อ.','พ.ต.ท.','พ.ต.ต.',
+  'ร.ต.อ.','ร.ต.ท.','ร.ต.ต.',
+  'จ.ส.ต.','ด.ต.','ส.ต.อ.','ส.ต.ท.','ส.ต.ต.'
+];
+function splitRankName(fullText){
+  const s = String(fullText || '').trim();
+  if (!s) return { rank: '', name: '' };
+  const sorted = RANK_PATTERNS.slice().sort((a,b)=>b.length-a.length); // ยาวก่อนสั้น กันจับคำผิด
+  for (const r of sorted){
+    if (s.indexOf(r) === 0){
+      return { rank: r, name: s.slice(r.length).trim() };
+    }
+  }
+  return { rank: '', name: s }; // ไม่พบยศที่ตรงกัน (เช่นชื่อผู้ขับรถ "นาย ปป") ให้ถือว่าทั้งหมดเป็นชื่อ
+}
 // โหลดฟอนต์ Sarabun ให้พร้อมก่อนวาดลง canvas เสมอ (สำคัญมากบนมือถือที่เน็ตช้า
 // เพราะถ้ายังโหลดไม่เสร็จ canvas จะ fallback ไปใช้ฟอนต์ระบบแทนโดยไม่แจ้งเตือน)
 async function ensureFontsLoaded(){
@@ -841,6 +871,7 @@ async function generateReportImage(d, onProgress){
   const FONT = '"Sarabun",sans-serif';
   const M = 44;
   const photoW = W - 2*M;
+  const TAB_INDENT = 40; // ระยะเยื้องบรรทัดแรกของย่อหน้า "อนึ่ง..." (ประมาณ 1 tab)
 
   const notice = 'อนึ่งในการตรวจสอบครั้งนี้เจ้าหน้าที่พนักงานตำรวจชุดตรวจสอบได้กระทำไปตามอำนาจหน้าที่ ' +
     'มิได้ทำร้ายร่างกาย บังคับขู่เข็ญ แนะนำ หลอกลวง ชักจูง หรือให้สัญญาอย่างหนึ่งอย่างใด ' +
@@ -848,7 +879,7 @@ async function generateReportImage(d, onProgress){
     'และมิได้ทำให้ทรัพย์สินเสียหายหรือเสื่อมค่าแต่อย่างใด เจ้าพนักงานผู้ตรวจสอบได้ให้ความเป็นธรรมดีแล้ว';
   const measureCtx = document.createElement('canvas').getContext('2d');
   measureCtx.font = '400 13px ' + FONT;
-  const noticeLines = wrapText(measureCtx, notice, W - 2*M);
+  const noticeLines = wrapText(measureCtx, notice, W - 2*M - TAB_INDENT);
 
   // ---- ความสูงของทุกส่วนยกเว้นรูปภาพ (คงที่ ไม่ขึ้นกับจำนวน/ขนาดรูป) ----
   const HEAD_H = 40 + 7*40 + 40 + 40 + 18;             // หัวข้อ + แถวข้อมูล 7 แถว + แถวผลชั่ง + แถวสติ๊กเกอร์ + ระยะห่าง
@@ -869,8 +900,9 @@ async function generateReportImage(d, onProgress){
   const leftColW = photoW - rightColW;
   const leftRows = sidePhotos.length;
   const gridH = bigPhoto ? Math.max(MIN_CELL_H * Math.max(leftRows, 1), A4_H - nonPhotoH) : 0;
+  const GAP_AFTER_PHOTO = 34; // ระยะห่างจากรูปรายงานถึงข้อความ "อ่านให้ฟัง..." (เว้นเพิ่มอีก 1 บรรทัด)
 
-  const H = nonPhotoH + gridH + (bigPhoto ? 14 : 0);
+  const H = nonPhotoH + gridH + (bigPhoto ? GAP_AFTER_PHOTO : 0);
   const canvas = document.createElement('canvas');
   canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext('2d');
@@ -949,7 +981,8 @@ async function generateReportImage(d, onProgress){
   y += rowH + 18;
 
   ctx.fillStyle = '#5c6b7c'; ctx.font = '400 13px ' + FONT;
-  noticeLines.forEach(line=>{ ctx.fillText(line, M, y); y += 20; });
+  // บรรทัดแรกของย่อหน้าเยื้องเข้ามา 1 tab (TAB_INDENT) ส่วนบรรทัดถัดไปชิดขอบซ้ายตามปกติ
+  noticeLines.forEach((line, idx)=>{ ctx.fillText(line, M + (idx===0 ? TAB_INDENT : 0), y); y += 20; });
   y += 14;
 
   const totalAsyncSteps = filled.length + 3;
@@ -985,7 +1018,7 @@ async function generateReportImage(d, onProgress){
       tickProgress();
       drawImageContain(ctx, img, p, cellX, cellY, leftColW, cellH2, CELL_PAD);
     }
-    y += gridH + 14;
+    y += gridH + GAP_AFTER_PHOTO;
   }
 
   ctx.fillStyle = '#152230'; ctx.font = '500 14px ' + FONT; ctx.textAlign='center';
@@ -994,36 +1027,45 @@ async function generateReportImage(d, onProgress){
 
   const sigDefs = [
     ['sig1', d.inspector1, 'ผู้ตรวจสอบ/บันทึก/ผู้ชั่งน้ำหนัก'],
-    ['sig2', d.inspector2, 'ผู้ตรวจสอบ (คนที่ 2)'],
+    ['sig2', d.inspector2, 'ผู้ตรวจสอบ'],
     ['sig3', d.driverName, 'ผู้ขับรถ/ร่วมตรวจสอบ']
   ];
   // ---- แถวลายเซ็นแบบเดียวกับแบบฟอร์มกระดาษจริง: ----
-  // "(ลงชื่อ)…………[ลายเซ็นวางทับเส้นประ]…………ตำแหน่ง" อยู่บรรทัดเดียวกัน
-  // แล้วมี "(ชื่อ-นามสกุล)" อยู่กึ่งกลางใต้เส้นประในบรรทัดถัดไป
+  // "(ลงชื่อ) [ยศ] …………[ลายเซ็นวางทับเส้นประ]…………ตำแหน่ง" อยู่บรรทัดเดียวกัน
+  // แล้วมี "(ชื่อ-นามสกุล ไม่รวมยศ)" อยู่กึ่งกลางใต้เส้นประในบรรทัดถัดไป
   const labelX = W/2 - 250;
   const lineX1 = labelX + 78;
   const lineW = 230;
   const lineX2 = lineX1 + lineW;
   const roleX = lineX2 + 12;
-  for (const [key, name, role] of sigDefs){
+  for (const [key, fullName, role] of sigDefs){
+    const { rank, name } = splitRankName(fullName);
     const baseY = y + 8;
 
     ctx.fillStyle = '#152230'; ctx.font = '500 15px ' + FONT; ctx.textAlign = 'left';
     ctx.fillText('(ลงชื่อ)', labelX, baseY);
 
+    // แสดงยศไว้ด้านหน้าลายเซ็น (แทนที่จะรวมไว้กับชื่อด้านล่างเหมือนเดิม)
+    let sigLineX1 = lineX1;
+    if (rank){
+      ctx.fillStyle = '#152230'; ctx.font = '600 14px ' + FONT;
+      ctx.fillText(rank, lineX1, baseY);
+      sigLineX1 = lineX1 + ctx.measureText(rank).width + 8;
+    }
+
     ctx.setLineDash([2, 3]);
     ctx.strokeStyle = '#9aa7b4'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(lineX1, baseY + 9); ctx.lineTo(lineX2, baseY + 9); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(sigLineX1, baseY + 9); ctx.lineTo(lineX2, baseY + 9); ctx.stroke();
     ctx.setLineDash([]);
 
     const pad = sigPads[key];
     if (!pad.isEmpty()){
       const img = await loadImageFromDataUrl(pad.toDataUrl());
       if (img){
-        const availW = lineW - 12, availH = 42;
+        const availW = (lineX2 - sigLineX1) - 12, availH = 42;
         const scale = Math.min(availW / img.width, availH / img.height, 1);
         const w = img.width * scale, h = img.height * scale;
-        const dx = lineX1 + (lineW - w) / 2, dy = baseY - h + 4;
+        const dx = sigLineX1 + ((lineX2 - sigLineX1) - w) / 2, dy = baseY - h + 4;
         ctx.drawImage(img, dx, dy, w, h);
       }
     }
