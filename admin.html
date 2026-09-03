@@ -165,11 +165,11 @@
         <thead>
           <tr>
             <th>วันที่</th><th>เวลา</th><th>ทะเบียน</th><th>ลักษณะรถ</th><th>ผู้ขับขี่</th>
-            <th>สินค้า</th><th>น้ำหนัก (กก.)</th><th>ผล</th><th>ผู้ตรวจสอบ</th><th>รายงาน</th><th>โฟลเดอร์</th>
+            <th>สินค้า</th><th>น้ำหนัก (กก.)</th><th>ผล</th><th>สติ๊กเกอร์/บริษัท</th><th>ผู้ตรวจสอบ</th><th>รายงาน</th><th>โฟลเดอร์</th>
           </tr>
         </thead>
         <tbody id="resultBody">
-          <tr><td colspan="11" class="empty">กำลังโหลด…</td></tr>
+          <tr><td colspan="12" class="empty">กำลังโหลด…</td></tr>
         </tbody>
       </table>
     </div>
@@ -260,7 +260,7 @@ async function runSearch(){
 
 function renderTable(rows){
   const tbody = document.getElementById('resultBody');
-  if (!rows.length){ tbody.innerHTML = '<tr><td colspan="11" class="empty">ไม่พบข้อมูลตามเงื่อนไขที่เลือก</td></tr>'; return; }
+  if (!rows.length){ tbody.innerHTML = '<tr><td colspan="12" class="empty">ไม่พบข้อมูลตามเงื่อนไขที่เลือก</td></tr>'; return; }
   tbody.innerHTML = rows.map(r=>{
     const over = r.result === 'เกิน';
     return '<tr>' +
@@ -272,6 +272,7 @@ function renderTable(rows){
       '<td>' + (r.cargo||'-') + '</td>' +
       '<td>' + (r.weight||'-') + '</td>' +
       '<td><span class="badge ' + (over?'over':'ok') + '">' + (r.result||'-') + '</span></td>' +
+      '<td>' + (r.sticker === 'มี' ? (r.stickerName || 'มี') : '-') + '</td>' +
       '<td>' + (r.inspector1||'-') + '</td>' +
       '<td>' + (r.reportLink ? '<a class="link" href="'+r.reportLink+'" target="_blank">ดู →</a>' : '-') + '</td>' +
       '<td>' + (r.folderLink ? '<a class="link" href="'+r.folderLink+'" target="_blank">เปิด →</a>' : '-') + '</td>' +
