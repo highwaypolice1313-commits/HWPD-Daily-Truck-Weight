@@ -527,9 +527,9 @@ let geoProvinces = [], geoAmphures = [], geoTambons = [];
 async function loadThaiGeo(){
   try{
     const [p,a,t] = await Promise.all([
-      fetch('https://raw.githubusercontent.com/kongvut/thai-province-data/master/api_province.json').then(r=>r.json()),
-      fetch('https://raw.githubusercontent.com/kongvut/thai-province-data/master/api_amphure.json').then(r=>r.json()),
-      fetch('https://raw.githubusercontent.com/kongvut/thai-province-data/master/api_tambon.json').then(r=>r.json())
+      fetch('https://raw.githubusercontent.com/kongvut/thai-province-data/master/api/v1/province.json').then(r=>r.json()),
+      fetch('https://raw.githubusercontent.com/kongvut/thai-province-data/master/api/v1/amphure.json').then(r=>r.json()),
+      fetch('https://raw.githubusercontent.com/kongvut/thai-province-data/master/api/v1/tambon.json').then(r=>r.json())
     ]);
     geoProvinces = p; geoAmphures = a; geoTambons = t;
     document.getElementById('dlProvince').innerHTML = geoProvinces.map(x=>'<option value="'+x.name_th+'">').join('');
@@ -537,6 +537,7 @@ async function loadThaiGeo(){
     setupGeoGroup('addr');
   }catch(e){
     console.error('โหลดข้อมูลจังหวัด/อำเภอ/ตำบลไม่สำเร็จ', e);
+    showToast('โหลดข้อมูลจังหวัด/อำเภอ/ตำบลไม่สำเร็จ กรุณาพิมพ์กรอกเองหรือลองรีเฟรชหน้าใหม่', true, 5000);
   }
 }
 function setupGeoGroup(prefix){
