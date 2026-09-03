@@ -118,6 +118,8 @@
     .wrap{margin:-25px auto 0;padding:0 12px;}
     .panel{padding:15px 13px;margin-bottom:12px;border-radius:16px;}
     .filters{grid-template-columns:1fr;gap:9px;}.filters .field{min-width:0;}
+    /* Hard viewport cap for the iOS WebKit date picker. */
+    input[type=date]{display:block;width:100%!important;max-width:calc(100vw - 56px)!important;min-width:0!important;min-inline-size:0!important;}
     .filter-actions{display:grid;grid-template-columns:1fr 1fr;margin-top:13px;gap:8px;}.filter-actions span{display:none;}
     .filter-actions .btn{padding:10px 8px;font-size:13px;}.filter-actions #searchBtn,.filter-actions #exportPdfBtn,.filter-actions #exportXlsxBtn{grid-column:span 2;}
     .stats{grid-template-columns:repeat(2,1fr);gap:8px;}.stat{padding:12px 13px;}.stat:last-child{grid-column:span 2;}.stat .n{font-size:22px;}
