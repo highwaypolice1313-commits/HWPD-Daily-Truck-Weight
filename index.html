@@ -109,8 +109,9 @@
     .row3{grid-template-columns:1fr 1fr;}
     .row4{grid-template-columns:1fr 1fr;}
     .row2 > *, .row3 > *, .row4 > *{min-width:0;}
-    .date-time-row{grid-template-columns:minmax(0,1.25fr) minmax(0,.9fr);gap:8px;}
-    .date-time-row input[type=date],.date-time-row input[type=time]{min-width:0;padding:11px 7px;font-size:13px;letter-spacing:-.15px;}
+    .date-time-row{grid-template-columns:1fr;gap:10px;}
+    .date-time-row input[type=date],.date-time-row input[type=time]{min-width:0;padding:11px 12px;font-size:15.5px;letter-spacing:normal;}
+    .search-fields{grid-template-columns:1fr;}
   }
   @media (min-width:860px){
     .card-grid2{display:grid; grid-template-columns:1fr 1fr; gap:14px; align-items:start;}
@@ -212,12 +213,18 @@
     background:#fff; margin-top:6px; overflow:hidden;
   }
   .sigpad-wrap.has-sig{border-style:solid; border-color:var(--steel);}
-  .sigpad{display:block; width:100%; height:120px; touch-action:none; cursor:crosshair;}
+  .sigpad{display:block; width:100%; height:120px; touch-action:pan-y; cursor:default; pointer-events:none;}
+  .sigpad-wrap.signing .sigpad{touch-action:none; cursor:crosshair; pointer-events:auto;}
   .sigpad-placeholder{
     position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
     font-size:12.5px; color:var(--ink-dim); pointer-events:none;
   }
   .sigpad-wrap.has-sig .sigpad-placeholder{display:none;}
+  .sigpad-wrap.signing .sigpad-placeholder{display:none;}
+  .sig-activate{
+    border:1.5px solid var(--steel); border-radius:10px; background:#fff; color:var(--steel);
+    padding:8px 13px; font:700 13px 'Sarabun',sans-serif; cursor:pointer; pointer-events:auto;
+  }
   .sig-toolbar{display:flex; justify-content:flex-end; margin-top:5px;}
   .sig-clear{
     border:none; background:none; color:var(--steel); font-family:inherit;
@@ -477,22 +484,22 @@
       <div class="photo-grid">
         <label class="photo-slot" id="slot1" data-label="รถและผู้ขับขี่">
           <div class="icon">📷</div><div class="lbl">รถ/ผู้ขับขี่</div>
-          <input type="file" accept="image/*" capture="environment" data-idx="1">
+          <input type="file" accept="image/*" data-idx="1">
         </label>
         <label class="photo-slot" id="slot2" data-label="ใบขับขี่และทะเบียน">
           <div class="icon">🪪</div><div class="lbl">ใบขับขี่/ทะเบียน</div>
-          <input type="file" accept="image/*" capture="environment" data-idx="2">
+          <input type="file" accept="image/*" data-idx="2">
         </label>
         <label class="photo-slot" id="slot3" data-label="ใบชั่งน้ำหนัก">
           <div class="icon">🧾</div><div class="lbl">ใบชั่งน้ำหนัก</div>
-          <input type="file" accept="image/*" capture="environment" data-idx="3">
+          <input type="file" accept="image/*" data-idx="3">
         </label>
         <label class="photo-slot" id="slot4" data-label="รูปเพิ่มเติม">
           <div class="icon">➕</div><div class="lbl">เพิ่มเติม</div>
-          <input type="file" accept="image/*" capture="environment" data-idx="4">
+          <input type="file" accept="image/*" data-idx="4">
         </label>
       </div>
-      <p class="hint">แตะช่องเพื่อถ่ายภาพหรือเลือกจากคลัง ระบบจะย่อภาพให้พอดีอยู่ในกรอบเสมอโดยไม่ครอปภาพ</p>
+      <p class="hint">แตะช่องเพื่อเลือกและอัปโหลดภาพจากอุปกรณ์ ระบบจะย่อภาพให้พอดีอยู่ในกรอบเสมอโดยไม่ครอปภาพ</p>
     </div>
 
     <div class="card">
@@ -502,7 +509,7 @@
         <input type="text" id="fInspector1" placeholder="ยศ ชื่อ นามสกุล">
         <div class="sigpad-wrap" id="sigWrap1">
           <canvas class="sigpad" id="sig1"></canvas>
-          <div class="sigpad-placeholder">แตะเพื่อลงลายมือชื่อ</div>
+          <div class="sigpad-placeholder"><button type="button" class="sig-activate">เริ่มลงลายมือชื่อ</button></div>
         </div>
         <div class="sig-toolbar"><button type="button" class="sig-clear" data-target="sig1">ล้างลายเซ็น</button></div>
       </div>
@@ -511,7 +518,7 @@
         <input type="text" id="fInspector2" placeholder="ยศ ชื่อ นามสกุล">
         <div class="sigpad-wrap" id="sigWrap2">
           <canvas class="sigpad" id="sig2"></canvas>
-          <div class="sigpad-placeholder">แตะเพื่อลงลายมือชื่อ (ถ้ามี)</div>
+          <div class="sigpad-placeholder"><button type="button" class="sig-activate">เริ่มลงลายมือชื่อ</button></div>
         </div>
         <div class="sig-toolbar"><button type="button" class="sig-clear" data-target="sig2">ล้างลายเซ็น</button></div>
       </div>
@@ -519,7 +526,7 @@
         <label>ผู้ขับรถ/ร่วมตรวจสอบ (ใช้ชื่อผู้ขับขี่ด้านบน)</label>
         <div class="sigpad-wrap" id="sigWrap3">
           <canvas class="sigpad" id="sig3"></canvas>
-          <div class="sigpad-placeholder">ผู้ขับรถแตะเพื่อลงลายมือชื่อ</div>
+          <div class="sigpad-placeholder"><button type="button" class="sig-activate">เริ่มลงลายมือชื่อ</button></div>
         </div>
         <div class="sig-toolbar"><button type="button" class="sig-clear" data-target="sig3">ล้างลายเซ็น</button></div>
         <p class="hint">ผู้ขับรถ/ร่วมตรวจสอบได้อ่านและรับว่าข้อมูลถูกต้องแล้ว โดยการลงลายมือชื่อข้างต้น</p>
@@ -875,7 +882,8 @@ document.querySelectorAll('.photo-slot input').forEach(inp=>{
 class SignaturePad{
   constructor(canvas){
     this.canvas = canvas; this.ctx = canvas.getContext('2d');
-    this.drawing = false; this.empty = true; this.sized = false;
+    this.drawing = false; this.empty = true; this.sized = false; this.armed = false;
+    this.startPoint = null; this.pointerId = null;
     this.resize();
     canvas.addEventListener('pointerdown', e=>this.start(e));
     canvas.addEventListener('pointermove', e=>this.move(e));
@@ -895,17 +903,37 @@ class SignaturePad{
     this.sized = true;
   }
   pos(e){ const rect = this.canvas.getBoundingClientRect(); return { x: e.clientX - rect.left, y: e.clientY - rect.top }; }
+  activate(){
+    this.armed = true;
+    this.canvas.closest('.sigpad-wrap').classList.add('signing');
+  }
   start(e){
-    this.resize(); this.drawing = true; this.empty = false;
+    if (!this.armed) return;
+    this.resize(); this.drawing = false; this.pointerId = e.pointerId;
     this.canvas.setPointerCapture(e.pointerId);
-    const p = this.pos(e);
-    this.ctx.beginPath(); this.ctx.moveTo(p.x, p.y);
-    this.canvas.closest('.sigpad-wrap').classList.add('has-sig');
+    this.startPoint = this.pos(e);
     e.preventDefault();
   }
-  move(e){ if (!this.drawing) return; const p = this.pos(e); this.ctx.lineTo(p.x, p.y); this.ctx.stroke(); e.preventDefault(); }
-  end(){ this.drawing = false; }
-  clear(){ this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height); this.empty = true; this.canvas.closest('.sigpad-wrap').classList.remove('has-sig'); }
+  move(e){
+    if (!this.armed || !this.startPoint) return;
+    const p = this.pos(e);
+    if (!this.drawing){
+      const dx = p.x - this.startPoint.x, dy = p.y - this.startPoint.y;
+      if (Math.hypot(dx, dy) < 6) return; // Ignore taps and tiny accidental movements.
+      this.drawing = true; this.empty = false;
+      this.ctx.beginPath(); this.ctx.moveTo(this.startPoint.x, this.startPoint.y);
+      this.canvas.closest('.sigpad-wrap').classList.add('has-sig');
+    }
+    this.ctx.lineTo(p.x, p.y); this.ctx.stroke(); e.preventDefault();
+  }
+  end(e){
+    if (e && this.pointerId === e.pointerId && this.canvas.hasPointerCapture(e.pointerId)) this.canvas.releasePointerCapture(e.pointerId);
+    this.drawing = false; this.startPoint = null; this.pointerId = null;
+  }
+  clear(){
+    this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height); this.empty = true; this.armed = false;
+    this.canvas.closest('.sigpad-wrap').classList.remove('has-sig', 'signing');
+  }
   isEmpty(){ return this.empty; }
   toDataUrl(){ return this.canvas.toDataURL('image/png'); }
 }
@@ -914,6 +942,12 @@ const sigPads = {
   sig2: new SignaturePad(document.getElementById('sig2')),
   sig3: new SignaturePad(document.getElementById('sig3'))
 };
+document.querySelectorAll('.sig-activate').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const canvas = btn.closest('.sigpad-wrap').querySelector('.sigpad');
+    sigPads[canvas.id].activate();
+  });
+});
 document.querySelectorAll('.sig-clear').forEach(btn=>{
   btn.addEventListener('click', ()=>sigPads[btn.dataset.target].clear());
 });
