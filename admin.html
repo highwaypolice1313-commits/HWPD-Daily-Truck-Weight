@@ -53,6 +53,9 @@
     width:100%; padding:10px 11px; border-radius:10px; border:1.5px solid var(--line);
     background:#fbfcfd; font-family:inherit; font-size:14.5px; color:var(--ink); outline:none;
   }
+  /* Prevent the intrinsic width of the iOS date picker from pushing past its card. */
+  input[type=date]{min-width:0;min-inline-size:0;max-width:100%;max-inline-size:100%;}
+  .filters > .field{min-width:0;}
   input:focus,select:focus{border-color:var(--steel); box-shadow:0 0 0 3px rgba(44,74,110,0.13);}
   .btn{
     border:none; border-radius:10px; padding:10px 16px; font-family:inherit; font-weight:700;
