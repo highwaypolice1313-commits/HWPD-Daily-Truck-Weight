@@ -97,29 +97,35 @@
     font-family:inherit; font-size:15.5px; color:var(--ink);
     outline:none; transition:border-color .2s, box-shadow .2s;
   }
-  /* iOS Safari gives date/time controls an intrinsic minimum width unless it is reset. */
+  /* iOS Safari gives date/time controls an intrinsic minimum width that ignores width:100%
+     inside flex/grid layouts (a well-known WebKit quirk). -webkit-min-logical-width forces
+     WebKit to compute the control's minimum width against its container instead of its
+     oversized default content width, which is the actual root cause of the overflow. */
   input[type=date],input[type=time]{
     min-width:0; min-inline-size:0; max-width:100%; max-inline-size:100%;
+    box-sizing:border-box;
+    -webkit-min-logical-width:100%;
   }
   input:focus,textarea:focus,select:focus{
     border-color:var(--steel); box-shadow:0 0 0 3px rgba(44,74,110,0.15);
   }
   input.invalid{border-color:var(--danger); box-shadow:0 0 0 3px rgba(192,52,43,0.14);}
   textarea{resize:vertical; min-height:56px;}
-  .row2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
-  .row3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;}
-  .row4{display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:10px;}
+  .row2{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px;}
+  .row3{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr); gap:10px;}
+  .row4{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px;}
   .date-time-row > .field,.search-fields > .field{min-width:0;}
+  .row2 > .field, .row3 > .field, .row4 > .field{min-width:0;}
   @media (max-width:640px){
-    .row3{grid-template-columns:1fr 1fr;}
-    .row4{grid-template-columns:1fr 1fr;}
+    .row3{grid-template-columns:minmax(0,1fr) minmax(0,1fr);}
+    .row4{grid-template-columns:minmax(0,1fr) minmax(0,1fr);}
     .row2 > *, .row3 > *, .row4 > *{min-width:0;}
-    .date-time-row{grid-template-columns:1fr;gap:10px;}
+    .date-time-row{grid-template-columns:minmax(0,1fr);gap:10px;}
     .date-time-row input[type=date],.date-time-row input[type=time]{min-width:0;padding:11px 12px;font-size:15.5px;letter-spacing:normal;}
-    .search-fields{grid-template-columns:1fr;}
+    .search-fields{grid-template-columns:minmax(0,1fr);}
     /* Hard viewport cap: fixes the iOS WebKit date/time control overflowing its grid. */
     input[type=date],input[type=time]{
-      display:block; width:100%!important; max-width:calc(100vw - 56px)!important;
+      display:block; width:100%!important; max-width:100%!important;
       min-width:0!important; min-inline-size:0!important;
     }
     .date-time-row,.search-fields{width:100%;min-width:0;overflow:hidden;}
@@ -284,7 +290,7 @@
   .search-sheet-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px;}
   .search-sheet-head h2{margin:0;font-size:18px;}
   .search-close{width:32px;height:32px;border:0;border-radius:10px;background:#e5ebf1;color:var(--steel);font-size:20px;line-height:1;}
-  .search-fields{padding:0 18px 18px;display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .search-fields{padding:0 18px 18px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;}
   .search-fields .field{margin:0;}.search-fields .field.full{grid-column:1/-1;}
   .search-actions{display:flex;gap:10px;padding:13px 18px max(16px,env(safe-area-inset-bottom));background:#fff;position:sticky;bottom:0;}
   .search-actions button{flex:1;border:0;border-radius:12px;padding:12px;font:700 14px 'Sarabun',sans-serif;}
@@ -414,7 +420,7 @@
         <div id="plateRows">
           <div class="plate-row" data-plate-row>
             <div class="plate-row-grid">
-              <input type="text" inputmode="numeric" maxlength="2" class="plateCode1" placeholder="2 ตัวหน้า">
+              <input type="text" maxlength="3" class="plateCode1" placeholder="3 ตัวหน้า">
               <span class="plate-dash">-</span>
               <input type="text" inputmode="numeric" maxlength="4" class="plateCode2" placeholder="4 ตัวหลัง">
               <input type="text" class="plateProvince" list="dlProvince" placeholder="จังหวัด">
@@ -422,7 +428,7 @@
           </div>
         </div>
         <button type="button" class="add-plate-btn" id="addPlateBtn">+ เพิ่มทะเบียนพ่วง</button>
-        <p class="hint">กรอกเฉพาะตัวเลข เช่น 70 และ 1543 กรณีมีรถพ่วงให้กดปุ่มเพิ่มทะเบียน ระบบจะบันทึกทุกทะเบียนคั่นด้วยจุลภาค เช่น 10-500 ลพบุรี , 10-501 ลพบุรี</p>
+        <p class="hint">กรอกได้ทั้งตัวเลขและตัวอักษร เช่น กข70 และ 1543 กรณีมีรถพ่วงให้กดปุ่มเพิ่มทะเบียน ระบบจะบันทึกทุกทะเบียนคั่นด้วยจุลภาค เช่น 10-500 ลพบุรี , 10-501 ลพบุรี</p>
       </div>
       <div class="field"><label>ลักษณะรถ</label>
         <select id="fVehicleType">
@@ -739,7 +745,7 @@ function addPlateRow(){
   row.setAttribute('data-plate-row', '');
   row.innerHTML =
     '<div class="plate-row-grid">' +
-      '<input type="text" inputmode="numeric" maxlength="2" class="plateCode1" placeholder="2 ตัวหน้า">' +
+      '<input type="text" maxlength="3" class="plateCode1" placeholder="3 ตัวหน้า">' +
       '<span class="plate-dash">-</span>' +
       '<input type="text" inputmode="numeric" maxlength="4" class="plateCode2" placeholder="4 ตัวหลัง">' +
       '<input type="text" class="plateProvince" list="dlProvince" placeholder="จังหวัด">' +
