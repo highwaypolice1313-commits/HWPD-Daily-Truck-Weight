@@ -63,6 +63,20 @@
     -webkit-min-logical-width:100%;
   }
   .filters > .field{min-width:0;}
+  .dt-field{position:relative; min-width:0; overflow:hidden; border-radius:10px;}
+  .dt-field .native-dt{
+    position:absolute; inset:0; width:100%; height:100%; margin:0; padding:0;
+    border:0; opacity:0; z-index:2; -webkit-appearance:none; appearance:none;
+    min-width:0; min-inline-size:0; max-width:100%; max-inline-size:100%;
+  }
+  .dt-display{
+    position:relative; z-index:1; pointer-events:none;
+    width:100%; padding:10px 11px; border-radius:10px; box-sizing:border-box;
+    border:1.5px solid var(--line); background:#fbfcfd;
+    font-family:inherit; font-size:14.5px; color:var(--ink);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .dt-display.placeholder{color:var(--ink-dim);}
   input:focus,select:focus{border-color:var(--steel); box-shadow:0 0 0 3px rgba(44,74,110,0.13);}
   .btn{
     border:none; border-radius:10px; padding:10px 16px; font-family:inherit; font-weight:700;
@@ -155,8 +169,18 @@
   <div class="panel">
     <h2>ตัวกรอง</h2>
     <div class="filters">
-      <div class="field"><label>ตั้งแต่วันที่</label><input type="date" id="fStart"></div>
-      <div class="field"><label>ถึงวันที่</label><input type="date" id="fEnd"></div>
+      <div class="field"><label>ตั้งแต่วันที่</label>
+        <div class="dt-field">
+          <input type="date" id="fStart" class="native-dt">
+          <div class="dt-display placeholder" id="fStartDisplay">เลือกวันที่</div>
+        </div>
+      </div>
+      <div class="field"><label>ถึงวันที่</label>
+        <div class="dt-field">
+          <input type="date" id="fEnd" class="native-dt">
+          <div class="dt-display placeholder" id="fEndDisplay">เลือกวันที่</div>
+        </div>
+      </div>
       <div class="field"><label>หมายเลขทะเบียน</label><input type="text" id="fPlate" placeholder="ค้นหาบางส่วนได้"></div>
       <div class="field"><label>ผลการตรวจสอบ</label>
         <select id="fResult">
@@ -228,8 +252,34 @@ function isoMinusDays(n){
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
 }
 
+// ===== แสดงผลวันที่แบบย่อทับช่องกรอกจริง (native input ยังทำงานปกติ เพียงแค่ซ่อนไว้) =====
+// ทำให้ช่องวันที่ไม่ยาวล้นหรือทับกันบนมือถือ เพราะความยาวข้อความที่แสดงถูกควบคุมเองเสมอ
+const THAI_MONTHS_SHORT = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+function formatDateShort(isoDate){
+  if (!isoDate) return '';
+  const d = new Date(isoDate + 'T00:00:00');
+  if (isNaN(d.getTime())) return '';
+  const yy = String((d.getFullYear() + 543) % 100).padStart(2,'0');
+  return d.getDate() + ' ' + THAI_MONTHS_SHORT[d.getMonth()] + ' ' + yy;
+}
+function bindCompactDateTime(inputId, displayId, formatter, placeholder){
+  const input = document.getElementById(inputId);
+  const display = document.getElementById(displayId);
+  function refresh(){
+    const v = formatter(input.value);
+    if (v){ display.textContent = v; display.classList.remove('placeholder'); }
+    else { display.textContent = placeholder; display.classList.add('placeholder'); }
+  }
+  input.addEventListener('input', refresh);
+  input.addEventListener('change', refresh);
+  refresh();
+  return refresh;
+}
+
 document.getElementById('fStart').value = isoMinusDays(6);
 document.getElementById('fEnd').value = todayIso();
+const refreshFStart = bindCompactDateTime('fStart','fStartDisplay', formatDateShort, 'เลือกวันที่');
+const refreshFEnd = bindCompactDateTime('fEnd','fEndDisplay', formatDateShort, 'เลือกวันที่');
 
 function showToast(msg, isError, ms){
   const t = document.getElementById('toast');
@@ -339,16 +389,19 @@ document.getElementById('searchBtn').addEventListener('click', runSearch);
 document.getElementById('todayBtn').addEventListener('click', ()=>{
   document.getElementById('fStart').value = todayIso();
   document.getElementById('fEnd').value = todayIso();
+  refreshFStart(); refreshFEnd();
   runSearch();
 });
 document.getElementById('last7Btn').addEventListener('click', ()=>{
   document.getElementById('fStart').value = isoMinusDays(6);
   document.getElementById('fEnd').value = todayIso();
+  refreshFStart(); refreshFEnd();
   runSearch();
 });
 document.getElementById('last30Btn').addEventListener('click', ()=>{
   document.getElementById('fStart').value = isoMinusDays(29);
   document.getElementById('fEnd').value = todayIso();
+  refreshFStart(); refreshFEnd();
   runSearch();
 });
 
