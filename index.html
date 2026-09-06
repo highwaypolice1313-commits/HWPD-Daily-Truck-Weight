@@ -116,6 +116,20 @@
   .row4{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px;}
   .date-time-row > .field,.search-fields > .field{min-width:0;}
   .row2 > .field, .row3 > .field, .row4 > .field{min-width:0;}
+  .dt-field{position:relative; min-width:0; overflow:hidden; border-radius:12px;}
+  .dt-field .native-dt{
+    position:absolute; inset:0; width:100%; height:100%; margin:0; padding:0;
+    border:0; opacity:0; z-index:2; -webkit-appearance:none; appearance:none;
+    min-width:0; min-inline-size:0; max-width:100%; max-inline-size:100%;
+  }
+  .dt-display{
+    position:relative; z-index:1; pointer-events:none;
+    width:100%; padding:11px 12px; border-radius:12px; box-sizing:border-box;
+    border:1.5px solid rgba(21,34,48,0.14); background:rgba(255,255,255,0.85);
+    font-family:inherit; font-size:15.5px; color:var(--ink);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .dt-display.placeholder{color:var(--ink-dim);}
   @media (max-width:640px){
     .row3{grid-template-columns:minmax(0,1fr) minmax(0,1fr);}
     .row4{grid-template-columns:minmax(0,1fr) minmax(0,1fr);}
@@ -394,8 +408,18 @@
     <div class="card">
       <h2>เวลาและสถานที่</h2>
       <div class="row2 date-time-row">
-        <div class="field"><label>วันที่ตรวจสอบ</label><input type="date" id="fDate"></div>
-        <div class="field"><label>เวลา</label><input type="time" id="fTime"></div>
+        <div class="field"><label>วันที่ตรวจสอบ</label>
+          <div class="dt-field">
+            <input type="date" id="fDate" class="native-dt">
+            <div class="dt-display placeholder" id="fDateDisplay">เลือกวันที่</div>
+          </div>
+        </div>
+        <div class="field"><label>เวลา</label>
+          <div class="dt-field">
+            <input type="time" id="fTime" class="native-dt">
+            <div class="dt-display placeholder" id="fTimeDisplay">เลือกเวลา</div>
+          </div>
+        </div>
       </div>
       <div class="field"><label>สถานที่ตรวจสอบ/ชั่ง</label>
         <div class="row2">
@@ -602,8 +626,18 @@
   <form class="search-sheet" id="searchForm">
     <div class="search-sheet-head"><h2>ค้นหารายงาน</h2><button class="search-close" id="searchCloseBtn" type="button" aria-label="ปิด">×</button></div>
     <div class="search-fields">
-      <div class="field"><label>ตั้งแต่วันที่</label><input id="searchStartDate" type="date"></div>
-      <div class="field"><label>ถึงวันที่</label><input id="searchEndDate" type="date"></div>
+      <div class="field"><label>ตั้งแต่วันที่</label>
+        <div class="dt-field">
+          <input id="searchStartDate" type="date" class="native-dt">
+          <div class="dt-display placeholder" id="searchStartDateDisplay">เลือกวันที่</div>
+        </div>
+      </div>
+      <div class="field"><label>ถึงวันที่</label>
+        <div class="dt-field">
+          <input id="searchEndDate" type="date" class="native-dt">
+          <div class="dt-display placeholder" id="searchEndDateDisplay">เลือกวันที่</div>
+        </div>
+      </div>
       <div class="field full"><label>ทะเบียนรถ</label><input id="searchPlate" type="text" placeholder="เช่น 70-1543 หรือ จังหวัด"></div>
       <div class="field"><label>ชื่อผู้ขับขี่</label><input id="searchDriver" type="text" placeholder="ชื่อ หรือ นามสกุล"></div>
       <div class="field"><label>สินค้า</label><input id="searchCargo" type="text" placeholder="เช่น ข้าว"></div>
@@ -659,6 +693,7 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbysl2i1Laxowyw3M0hQDGk7
 
 const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
   'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+const THAI_MONTHS_SHORT = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
 
 function toThaiDate(isoDate){
   const d = new Date(isoDate + 'T00:00:00');
@@ -667,6 +702,30 @@ function toThaiDate(isoDate){
 function todayIso(){
   const d = new Date();
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+// ===== แสดงผลวันที่/เวลาแบบย่อทับช่องกรอกจริง (native input ยังทำงานปกติ เพียงแค่ซ่อนไว้) =====
+// วิธีนี้ทำให้ช่องวันที่/เวลาไม่ยาวล้นหรือทับกันบนมือถือ เพราะข้อความที่แสดงถูกควบคุมความยาวเองเสมอ
+// ไม่ขึ้นกับรูปแบบวันที่ยาวๆ ที่เบราว์เซอร์/ระบบปฏิบัติการบางรุ่นเลือกใช้แสดงในตัวควบคุมจริง
+function formatDateShort(isoDate){
+  if (!isoDate) return '';
+  const d = new Date(isoDate + 'T00:00:00');
+  if (isNaN(d.getTime())) return '';
+  const yy = String((d.getFullYear() + 543) % 100).padStart(2,'0');
+  return d.getDate() + ' ' + THAI_MONTHS_SHORT[d.getMonth()] + ' ' + yy;
+}
+function bindCompactDateTime(inputId, displayId, formatter, placeholder){
+  const input = document.getElementById(inputId);
+  const display = document.getElementById(displayId);
+  function refresh(){
+    const v = formatter(input.value);
+    if (v){ display.textContent = v; display.classList.remove('placeholder'); }
+    else { display.textContent = placeholder; display.classList.add('placeholder'); }
+  }
+  input.addEventListener('input', refresh);
+  input.addEventListener('change', refresh);
+  refresh();
+  return refresh;
 }
 
 async function callApi(payload){
@@ -822,6 +881,10 @@ initLiff();
 
 document.getElementById('fDate').value = todayIso();
 document.getElementById('fTime').value = new Date().toTimeString().slice(0,5);
+const refreshFDate = bindCompactDateTime('fDate','fDateDisplay', formatDateShort, 'เลือกวันที่');
+const refreshFTime = bindCompactDateTime('fTime','fTimeDisplay', v=>v||'', 'เลือกเวลา');
+bindCompactDateTime('searchStartDate','searchStartDateDisplay', formatDateShort, 'เลือกวันที่');
+bindCompactDateTime('searchEndDate','searchEndDateDisplay', formatDateShort, 'เลือกวันที่');
 try{
   const lastInspector1 = localStorage.getItem('tw_lastInspector1');
   if (lastInspector1) document.getElementById('fInspector1').value = lastInspector1;
@@ -1465,6 +1528,7 @@ function resetForm(){
   ].forEach(id=>document.getElementById(id).value='');
   resetPlateRows();
   document.getElementById('fTime').value = new Date().toTimeString().slice(0,5);
+  if (typeof refreshFTime === 'function') refreshFTime();
   document.getElementById('fVehicleType').selectedIndex = 0;
   document.getElementById('fVehicleOther').style.display = 'none';
   setupSegmented2Reset();
@@ -1522,7 +1586,11 @@ function closeSearch(){ searchOverlay.classList.remove('show'); searchOverlay.se
 document.getElementById('mobileSearchBtn').addEventListener('click', openSearch);
 document.getElementById('searchCloseBtn').addEventListener('click', closeSearch);
 searchOverlay.addEventListener('click', e=>{ if (e.target === searchOverlay) closeSearch(); });
-document.getElementById('searchResetBtn').addEventListener('click', ()=>document.getElementById('searchForm').reset());
+document.getElementById('searchResetBtn').addEventListener('click', ()=>{
+  document.getElementById('searchForm').reset();
+  document.getElementById('searchStartDate').dispatchEvent(new Event('input'));
+  document.getElementById('searchEndDate').dispatchEvent(new Event('input'));
+});
 document.getElementById('searchForm').addEventListener('submit', async e=>{
   e.preventDefault();
   const filter = {
