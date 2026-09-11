@@ -1042,6 +1042,20 @@ async function loadImageFromDataUrl(dataUrl){
     img.src = dataUrl;
   });
 }
+
+// วาดข้อความให้กึ่งกลางที่ centerX โดยคำนวณความกว้างเองแล้ว fillText แบบ 'left'
+// เหตุผล: canvas ที่ใช้สร้างรายงานถูกสร้างด้วย document.createElement('canvas') โดยไม่เคย
+// แนบเข้า DOM เลย เมื่อรวมกับ WebKit (LIFF บน iOS ใช้เอนจินเดียวกับ Safari) การใช้
+// ctx.textAlign = 'center' กับ canvas ที่ไม่ได้แนบ DOM จะจัดกึ่งกลางไม่ถูกต้อง โดยเฉพาะ
+// ข้อความภาษาไทยที่มีสระ/วรรณยุกต์ลอย ผลคือตัวอักษรตัวแรกไปเริ่มที่จุดกึ่งกลางแล้ววิ่ง
+// ต่อไปทางขวาแทนที่จะกึ่งกลางทั้งบรรทัด การคำนวณตำแหน่งเองด้วย measureText() แล้ววาด
+// แบบ 'left' จึงเสถียรกับทุกเบราว์เซอร์/สถานะ DOM ของ canvas
+function fillTextCentered(ctx, text, centerX, y){
+  ctx.textAlign = 'left';
+  const w = ctx.measureText(text).width;
+  ctx.fillText(text, centerX - w/2, y);
+}
+
 // ตัดบรรทัดโดยแบ่งเป็น "คำ" ก่อน (ใช้ Intl.Segmenter ถ้าเบราว์เซอร์รองรับ) แล้วค่อยนำคำมาต่อทีละคำ
 // จนกว่าจะเกินความกว้างที่กำหนด วิธีนี้ป้องกันคำไทยขาดกลางคำ เช่น "อย่าง" ถูกตัดเป็น "อย่" + "าง"
 // ถ้าเบราว์เซอร์ไม่รองรับ Intl.Segmenter จะ fallback ไปตัดทีละตัวอักษรแบบเดิม (มีโอกาสคำขาดได้)
@@ -1173,8 +1187,7 @@ async function generateReportImage(d, onProgress){
 
   ctx.fillStyle = '#152230';
   ctx.font = '700 26px ' + FONT;
-  ctx.textAlign = 'center';
-  ctx.fillText('บันทึกตรวจสอบน้ำหนักรถยนต์บรรทุก', W/2, y);
+  fillTextCentered(ctx, 'บันทึกตรวจสอบน้ำหนักรถยนต์บรรทุก', W/2, y);
   y += 40;
 
   const rows = [
@@ -1232,7 +1245,10 @@ async function generateReportImage(d, onProgress){
     ctx.fillStyle = active ? (label==='เกิน' ? '#c0342b' : '#1b8a4d') : '#ffffff';
     ctx.strokeStyle = '#9aa7b4';
     ctx.fillRect(bx, by, 18, 18); ctx.strokeRect(bx, by, 18, 18);
-    if (active){ ctx.fillStyle='#ffffff'; ctx.font='700 13px '+FONT; ctx.textAlign='center'; ctx.fillText('✓', bx+9, by+10); ctx.textAlign='left'; }
+    if (active){
+      ctx.fillStyle='#ffffff'; ctx.font='700 13px '+FONT;
+      fillTextCentered(ctx, '✓', bx+9, by+10);
+    }
     ctx.fillStyle = '#152230'; ctx.font = '500 14px ' + FONT;
     ctx.fillText(label, bx+24, y+rowH/2);
   });
@@ -1248,7 +1264,10 @@ async function generateReportImage(d, onProgress){
     ctx.fillStyle = active ? '#2c4a6e' : '#ffffff';
     ctx.strokeStyle = '#9aa7b4';
     ctx.fillRect(bx, by, 18, 18); ctx.strokeRect(bx, by, 18, 18);
-    if (active){ ctx.fillStyle='#ffffff'; ctx.font='700 13px '+FONT; ctx.textAlign='center'; ctx.fillText('✓', bx+9, by+10); ctx.textAlign='left'; }
+    if (active){
+      ctx.fillStyle='#ffffff'; ctx.font='700 13px '+FONT;
+      fillTextCentered(ctx, '✓', bx+9, by+10);
+    }
     ctx.fillStyle = '#152230'; ctx.font = '500 14px ' + FONT;
     ctx.fillText(label, bx+24, y+rowH/2);
     if (label === 'มี' && d.sticker === 'มี' && d.stickerName){
@@ -1299,8 +1318,8 @@ async function generateReportImage(d, onProgress){
     y += gridH + GAP_AFTER_PHOTO;
   }
 
-  ctx.fillStyle = '#152230'; ctx.font = '500 14px ' + FONT; ctx.textAlign='center';
-  ctx.fillText('อ่านให้ฟังแล้วรับว่าถูกต้อง จึงได้ร่วมกันลงลายมือชื่อไว้เป็นหลักฐาน', W/2, y);
+  ctx.fillStyle = '#152230'; ctx.font = '500 14px ' + FONT;
+  fillTextCentered(ctx, 'อ่านให้ฟังแล้วรับว่าถูกต้อง จึงได้ร่วมกันลงลายมือชื่อไว้เป็นหลักฐาน', W/2, y);
   y += SIGN_INTRO_GAP;
 
   const sigDefs = [
@@ -1356,8 +1375,8 @@ async function generateReportImage(d, onProgress){
       captionFontPx -= 1;
       ctx.font = '600 ' + captionFontPx + 'px ' + FONT;
     }
-    ctx.fillStyle = '#152230'; ctx.textAlign = 'center';
-    ctx.fillText(caption, (lineX1 + lineX2) / 2, y);
+    ctx.fillStyle = '#152230';
+    fillTextCentered(ctx, caption, (lineX1 + lineX2) / 2, y);
 
     y += 44;
   }
