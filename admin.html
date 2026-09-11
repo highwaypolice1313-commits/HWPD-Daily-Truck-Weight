@@ -66,16 +66,16 @@
   .dt-field{position:relative; min-width:0; overflow:hidden; border-radius:10px;}
   .dt-field .native-dt{
   position:absolute; inset:0; width:100%; height:100%; margin:0; padding:0;
-  border:0; opacity:0; z-index:2;
+  border:0; opacity:0; z-index:1; pointer-events:none;   /* เปลี่ยนจาก z-index:2 → 1 และเพิ่ม pointer-events:none */
   min-width:0; min-inline-size:0; max-width:100%; max-inline-size:100%;
-  }
-  .dt-display{
-    position:relative; z-index:1; pointer-events:none;
-    width:100%; padding:10px 11px; border-radius:10px; box-sizing:border-box;
-    border:1.5px solid var(--line); background:#fbfcfd;
-    font-family:inherit; font-size:14.5px; color:var(--ink);
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-  }
+}
+.dt-display{
+  position:relative; z-index:2; cursor:pointer;           /* เปลี่ยนจาก z-index:1 → 2 และลบ pointer-events:none ออก */
+  width:100%; padding:10px 11px; border-radius:10px; box-sizing:border-box;
+  border:1.5px solid var(--line); background:#fbfcfd;
+  font-family:inherit; font-size:14.5px; color:var(--ink);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
   .dt-display.placeholder{color:var(--ink-dim);}
   input:focus,select:focus{border-color:var(--steel); box-shadow:0 0 0 3px rgba(44,74,110,0.13);}
   .btn{
@@ -405,6 +405,21 @@ document.getElementById('last30Btn').addEventListener('click', ()=>{
   runSearch();
 });
 
+  function openDatePicker(input){
+  if (typeof input.showPicker === 'function') {
+    try { input.showPicker(); return; } catch(e){ /* ไปต่อที่ fallback ด้านล่าง */ }
+  }
+  input.focus();
+  input.click(); // fallback สำหรับเบราว์เซอร์เก่าที่ยังไม่มี showPicker()
+}
+
+document.getElementById('fStartDisplay').addEventListener('click', function(){
+  openDatePicker(document.getElementById('fStart'));
+});
+document.getElementById('fEndDisplay').addEventListener('click', function(){
+  openDatePicker(document.getElementById('fEnd'));
+});
+  
 async function doExport(kind){
   const btn = document.getElementById(kind === 'excel' ? 'exportXlsxBtn' : 'exportPdfBtn');
   const originalText = btn.textContent;
