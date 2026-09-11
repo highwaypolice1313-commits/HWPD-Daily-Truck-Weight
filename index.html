@@ -1312,11 +1312,11 @@ async function generateReportImage(d, onProgress){
   // "(ลงชื่อ) …………[ลายเซ็นวางทับเส้นประ]…………ตำแหน่ง" อยู่บรรทัดเดียวกัน
   // แล้วมี "(ยศ ชื่อ-นามสกุล)" อยู่กึ่งกลางใต้เส้นประในบรรทัดถัดไป โดยความกว้างของวงเล็บ
   // จะถูกปรับขนาดฟอนต์ให้พอดี "เท่ากับ" ความยาวของเส้นประด้านบนเสมอ (ไม่ล้น ไม่สั้นเกินไป)
-  const labelX = W/2 - 250;
-  const lineX1 = labelX + 78;
   const lineW = 230;
-  const lineX2 = lineX1 + lineW;
-  const roleX = lineX2 + 12;
+  const lineX1 = W/2 - lineW/2;   // 385
+  const lineX2 = W/2 + lineW/2;   // 615
+  const labelX = lineX1 - 78;     // 307
+  const roleX = lineX2 + 12;      // 627
   for (const [key, fullName, role] of sigDefs){
     const { rank, name } = splitRankName(fullName);
     const caption = '(' + (rank ? rank + ' ' : '') + (name || '..........................') + ')';
