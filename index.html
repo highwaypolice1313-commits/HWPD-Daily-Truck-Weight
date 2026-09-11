@@ -296,7 +296,7 @@
   .badge.over{background:var(--danger);}
   .entry-meta{font-size:13px; color:var(--ink-dim); line-height:1.6;}
   .entry-links{display:flex; gap:14px; flex-wrap:wrap; margin-top:8px;}
-  .entry-link{font-size:13px; color:var(--steel); font-weight:600; text-decoration:none;}
+  .entry-link{font-size:13px; color:var(--steel); font-weight:600; text-decoration:none; background:none; border:none; padding:0; cursor:pointer; font-family:inherit;}
   .empty{text-align:center; color:var(--ink-dim); padding:40px 10px; font-size:14px;}
   .toast{
     position:fixed; left:16px; right:16px; bottom:22px; z-index:50; max-width:420px; margin:0 auto;
@@ -886,6 +886,30 @@ function openReportModal(dataUrl, plate, dateThai){
   dlBtn.download = safeName;
   reportModal.classList.add('show');
 }
+// ดึง Drive file ID จากลิงก์รูปแบบต่างๆ ที่ Apps Script อาจสร้างไว้ เช่น
+// https://drive.google.com/file/d/XXXX/view หรือ https://drive.google.com/open?id=XXXX
+function extractDriveFileId(url){
+  if (!url) return null;
+  const m = String(url).match(/[-\w]{25,}/);
+  return m ? m[0] : null;
+}
+// เปิดดูใบรายงานจากลิงก์ Drive โดยแสดงในโมดัลของแอปเอง (ไม่เด้งออกไปหน้า Drive)
+// หมายเหตุ: วิธีนี้จะใช้ได้จริงก็ต่อเมื่อไฟล์บน Drive ถูกตั้งค่าแชร์เป็น
+// "ทุกคนที่มีลิงก์ - ดูได้" ไว้แล้วจากฝั่ง Apps Script (setSharing) มิเช่นนั้นรูปจะโหลดไม่ขึ้น
+function openReportFromLink(link, plate, dateThai){
+  const id = extractDriveFileId(link);
+  if (!id){ window.open(link, '_blank'); return; }
+  const directUrl = 'https://drive.google.com/uc?export=view&id=' + id;
+  openReportModal(directUrl, plate, dateThai);
+}
+document.getElementById('histList').addEventListener('click', (e)=>{
+  const btn = e.target.closest('.report-link-btn');
+  if (!btn) return;
+  const link = decodeURIComponent(btn.dataset.link || '');
+  const plate = decodeURIComponent(btn.dataset.plate || '');
+  const date = decodeURIComponent(btn.dataset.date || '');
+  openReportFromLink(link, plate, date);
+});
 function closeReportModal(){ reportModal.classList.remove('show'); }
 document.getElementById('reportModalClose').addEventListener('click', closeReportModal);
 document.getElementById('reportShareBtn').addEventListener('click', async ()=>{
@@ -1742,7 +1766,7 @@ function renderHistory(rows){
       '</div>' +
       (r.folderLink || r.reportLink ?
         '<div class="entry-links">' +
-          (r.reportLink ? '<a class="entry-link" href="'+r.reportLink+'" target="_blank">ดูใบรายงาน →</a>' : '') +
+          (r.reportLink ? '<button type="button" class="entry-link report-link-btn" data-link="'+encodeURIComponent(r.reportLink)+'" data-plate="'+encodeURIComponent(r.plate||'')+'" data-date="'+encodeURIComponent(r.date||'')+'">ดูใบรายงาน →</button>' : '') +
           (r.folderLink ? '<a class="entry-link" href="'+r.folderLink+'" target="_blank">เปิดโฟลเดอร์รูปภาพ →</a>' : '') +
         '</div>'
       : '') +
