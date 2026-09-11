@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>บันทึกตรวจสอบน้ำหนักรถบรรทุก</title>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -24,7 +24,27 @@
     --shadow:0 8px 28px rgba(21,34,48,0.12);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-  html,body{margin:0;padding:0;}
+  /* ล็อกไม่ให้ซูม/เลื่อนซ้ายขวา และปิดการเลือกข้อความ/เมนูแตะค้าง (callout) ทั้งหน้า
+     เพื่อป้องกันปัญหาจอ "เด้ง" ไปโฟกัสข้อความเวลาลากนิ้วใกล้ตัวอักษร (พบบ่อยตอนเซ็นลายเซ็น)
+     ยกเว้น input/textarea/select ที่ยังต้องพิมพ์และเลือกข้อความได้ตามปกติ */
+  html,body{
+    margin:0;padding:0;
+    width:100%;
+    overflow-x:hidden;
+    overscroll-behavior-y:none;
+    touch-action:manipulation;
+    -webkit-text-size-adjust:100%;
+  }
+  *{
+    -webkit-touch-callout:none;
+    -webkit-user-select:none;
+    user-select:none;
+  }
+  input,textarea,select{
+    -webkit-user-select:text;
+    user-select:text;
+    -webkit-touch-callout:default;
+  }
   body{
     font-family:'Sarabun','-apple-system',sans-serif;
     color:var(--ink);
@@ -245,6 +265,7 @@
   }
   .sigpad-wrap.has-sig{border-style:solid; border-color:var(--steel);}
   .sigpad{display:block; width:100%; height:120px; touch-action:pan-y; cursor:default; pointer-events:none;}
+  .sigpad-wrap.signing{overscroll-behavior:contain;}
   .sigpad-wrap.signing .sigpad{touch-action:none; cursor:crosshair; pointer-events:auto;}
   .sigpad-placeholder{
     position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
@@ -746,6 +767,21 @@ async function callApi(payload){
   if (!json.ok) throw new Error(json.error || 'เกิดข้อผิดพลาดไม่ทราบสาเหตุ');
   return json.data;
 }
+
+/** ======= กันซูม/ป้องกันการเลื่อนหน้าล้น (เสริมจาก viewport meta เผื่อเบราว์เซอร์บางตัว
+ *  โดยเฉพาะ LINE in-app browser บน iOS ไม่เคารพ user-scalable=no อย่างเดียว) ======= */
+document.addEventListener('gesturestart', e => e.preventDefault());
+document.addEventListener('gesturechange', e => e.preventDefault());
+document.addEventListener('gestureend', e => e.preventDefault());
+// กันการซูมด้วยการแตะสองครั้งติดกันเร็วๆ (double-tap zoom)
+let lastTouchEnd = 0;
+document.addEventListener('touchend', e => {
+  const now = Date.now();
+  if (now - lastTouchEnd <= 300) e.preventDefault();
+  lastTouchEnd = now;
+}, { passive: false });
+// กันการซูมด้วยการหมุนสกอลล์พร้อมกด Ctrl (trackpad บางรุ่นบน iPadOS)
+document.addEventListener('wheel', e => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
 
 let officerName = '';
 const photos = {};
