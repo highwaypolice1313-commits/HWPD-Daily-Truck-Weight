@@ -41,10 +41,14 @@
     user-select:none;
   }
   input,textarea,select{
-    -webkit-user-select:text;
-    user-select:text;
-    -webkit-touch-callout:default;
-  }
+  -webkit-user-select:text;
+  user-select:text;
+  -webkit-touch-callout:default;
+}
+html, body{
+  -webkit-user-select:auto;
+  user-select:auto;
+}
   body{
     font-family:'Sarabun','-apple-system',sans-serif;
     color:var(--ink);
