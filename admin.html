@@ -272,6 +272,12 @@ function bindCompactDateTime(inputId, displayId, formatter, placeholder){
   }
   input.addEventListener('input', refresh);
   input.addEventListener('change', refresh);
+  // เพิ่มส่วนนี้: บังคับเปิด picker เมื่อคลิกตรงไหนก็ได้ในกล่อง (ไม่ต้องเล็งไอคอน)
+  input.addEventListener('click', ()=>{
+    if (typeof input.showPicker === 'function'){
+      try { input.showPicker(); } catch(e){}
+    }
+  });
   refresh();
   return refresh;
 }
