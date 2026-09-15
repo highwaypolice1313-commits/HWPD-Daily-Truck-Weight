@@ -28,13 +28,17 @@
      เพื่อป้องกันปัญหาจอ "เด้ง" ไปโฟกัสข้อความเวลาลากนิ้วใกล้ตัวอักษร (พบบ่อยตอนเซ็นลายเซ็น)
      ยกเว้น input/textarea/select ที่ยังต้องพิมพ์และเลือกข้อความได้ตามปกติ */
   html,body{
-    margin:0;padding:0;
-    width:100%;
-    overflow-x:hidden;
+  margin:0;padding:0;
+  width:100%;
+  overflow-x:hidden;
+  -webkit-text-size-adjust:100%;
+}
+@media (hover:none) and (pointer:coarse){
+  html,body{
     overscroll-behavior-y:none;
     touch-action:manipulation;
-    -webkit-text-size-adjust:100%;
   }
+}
   *{
     -webkit-touch-callout:none;
     -webkit-user-select:none;
