@@ -1023,6 +1023,10 @@ class SignaturePad{
     canvas.addEventListener('pointermove', e=>this.move(e));
     canvas.addEventListener('pointerup', e=>this.end(e));
     canvas.addEventListener('pointercancel', e=>this.end(e));
+    // กัน LINE in-app browser (WKWebView บน iOS) ที่บางครั้งไม่เคารพ touch-action/preventDefault ของ pointer event
+    // ต้องใช้ { passive:false } เพื่อให้ preventDefault ใช้งานได้จริงกับ touch event
+    canvas.addEventListener('touchstart', e=>{ if (this.armed) e.preventDefault(); }, { passive:false });
+    canvas.addEventListener('touchmove', e=>{ if (this.armed) e.preventDefault(); }, { passive:false });
   }
   resize(){
     if (this.sized) return;
@@ -1040,6 +1044,14 @@ class SignaturePad{
   activate(){
     this.armed = true;
     this.canvas.closest('.sigpad-wrap').classList.add('signing');
+    // ล็อกสกรอลทั้งหน้าไว้ระหว่างกำลังเซ็น (เซฟตี้เน็ตชั้นที่ 2 เผื่อ touch-action ของตัว canvas เอาไม่อยู่)
+    document.body.style.overflow = 'hidden';
+    document.body.style.touchAction = 'none';
+  }
+  deactivateScrollLock(){
+    // คืนค่าการเลื่อนหน้าปกติ เรียกเมื่อเลิกเซ็น (end/clear) ให้ผู้ใช้เลื่อนหน้าอื่นๆ ได้ตามปกติ
+    document.body.style.overflow = '';
+    document.body.style.touchAction = '';
   }
   start(e){
     if (!this.armed) return;
@@ -1050,6 +1062,7 @@ class SignaturePad{
   }
   move(e){
     if (!this.armed || !this.startPoint) return;
+    e.preventDefault(); // เรียกทันทีตั้งแต่ pixel แรก ไม่รอผ่าน threshold ก่อน กันหน้าจอเลื่อนตั้งแต่เริ่มลาก
     const p = this.pos(e);
     if (!this.drawing){
       const dx = p.x - this.startPoint.x, dy = p.y - this.startPoint.y;
@@ -1058,7 +1071,7 @@ class SignaturePad{
       this.ctx.beginPath(); this.ctx.moveTo(this.startPoint.x, this.startPoint.y);
       this.canvas.closest('.sigpad-wrap').classList.add('has-sig');
     }
-    this.ctx.lineTo(p.x, p.y); this.ctx.stroke(); e.preventDefault();
+    this.ctx.lineTo(p.x, p.y); this.ctx.stroke();
   }
   end(e){
     if (e && this.pointerId === e.pointerId && this.canvas.hasPointerCapture(e.pointerId)) this.canvas.releasePointerCapture(e.pointerId);
@@ -1067,6 +1080,7 @@ class SignaturePad{
   clear(){
     this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height); this.empty = true; this.armed = false;
     this.canvas.closest('.sigpad-wrap').classList.remove('has-sig', 'signing');
+    this.deactivateScrollLock();
   }
   isEmpty(){ return this.empty; }
   toDataUrl(){ return this.canvas.toDataURL('image/png'); }
