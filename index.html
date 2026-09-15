@@ -402,6 +402,67 @@
     #tabNew .submit-btn{position:sticky;bottom:102px;z-index:10;box-shadow:0 10px 24px rgba(44,74,110,.35),0 2px 8px rgba(21,34,48,.16);}
     .dash-title{font-size:20px;}.result-chart{gap:13px;}.donut{width:112px;height:112px;}.donut:after{inset:21px;}
   }
+/* ===== กล่อง preview ลายเซ็นในฟอร์ม (แทน canvas เดิม) ===== */
+.sig-preview{
+  margin-top:6px; border:1.5px dashed rgba(21,34,48,0.25); border-radius:12px;
+  background:rgba(255,255,255,0.6); height:88px; position:relative; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; overflow:hidden;
+}
+.sig-preview.has-sig{border-style:solid; border-color:var(--steel); background:#fff;}
+.sig-preview img{width:100%; height:100%; object-fit:contain;}
+.sig-preview-empty{display:flex; flex-direction:column; align-items:center; gap:4px; color:var(--ink-dim); font-size:12.5px; font-weight:600;}
+.sig-preview-empty .icon{font-size:20px;}
+.sig-preview-clear{
+  position:absolute; top:6px; right:6px; z-index:2;
+  width:24px; height:24px; border-radius:50%; border:none;
+  background:rgba(21,34,48,0.55); color:#fff; font-size:13px; line-height:1;
+  display:none; align-items:center; justify-content:center;
+}
+.sig-preview.has-sig .sig-preview-clear{display:flex;}
+
+/* ===== โมดัลลงลายมือชื่อเต็มจอ ===== */
+.sig-modal-overlay{
+  position:fixed; inset:0; z-index:120; background:rgba(10,16,24,0.72);
+  display:flex; align-items:flex-end; justify-content:center;
+  opacity:0; pointer-events:none; transition:opacity .22s ease;
+}
+.sig-modal-overlay.show{opacity:1; pointer-events:auto;}
+.sig-modal{
+  width:100%; max-width:720px; background:#fff; border-radius:20px 20px 0 0;
+  display:flex; flex-direction:column; max-height:92vh;
+  transform:translateY(24px); transition:transform .28s cubic-bezier(.2,.8,.2,1);
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.sig-modal-overlay.show .sig-modal{transform:translateY(0);}
+.sig-modal-head{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:16px 18px; border-bottom:1px solid rgba(21,34,48,0.08); flex:none;
+}
+.sig-modal-head h2{margin:0; font-size:15.5px; font-weight:700;}
+.sig-modal-close{
+  width:30px; height:30px; border:none; border-radius:9px; background:rgba(21,34,48,0.08);
+  color:var(--ink-dim); font-size:16px; line-height:1;
+}
+.sig-modal-canvas-wrap{
+  flex:1; margin:14px 18px; border:1.5px dashed rgba(21,34,48,0.25); border-radius:14px;
+  background:#fbfcfd; position:relative; min-height:260px; overflow:hidden;
+}
+.sig-modal-canvas{
+  display:block; width:100%; height:100%; touch-action:none; cursor:crosshair;
+}
+.sig-modal-hint{
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  color:var(--ink-dim); font-size:13px; pointer-events:none;
+}
+.sig-modal-canvas-wrap.has-sig .sig-modal-hint{display:none;}
+.sig-modal-actions{display:flex; gap:10px; padding:12px 18px 16px; flex:none;}
+.sig-modal-actions button{
+  flex:1; border:none; border-radius:12px; padding:13px 0; font:700 14px 'Sarabun',sans-serif; cursor:pointer;
+}
+.sig-modal-clear{background:rgba(21,34,48,0.08); color:var(--ink-dim);}
+.sig-modal-confirm{background:linear-gradient(155deg,var(--steel),#1c3350); color:#fff;}
+.sig-modal-confirm:disabled{opacity:.5;}
+  
 </style>
 </head>
 <body>
@@ -569,36 +630,31 @@
     </div>
 
     <div class="card">
-      <h2>ผู้ลงลายมือชื่อ</h2>
-      <div class="field">
-        <label>ผู้ตรวจสอบ/บันทึก/ผู้ชั่งน้ำหนัก</label>
-        <input type="text" id="fInspector1" placeholder="ยศ ชื่อ นามสกุล">
-        <div class="sigpad-wrap" id="sigWrap1">
-          <canvas class="sigpad" id="sig1"></canvas>
-          <div class="sigpad-placeholder"><button type="button" class="sig-activate">เริ่มลงลายมือชื่อ</button></div>
-        </div>
-        <div class="sig-toolbar"><button type="button" class="sig-clear" data-target="sig1">ล้างลายเซ็น</button></div>
-      </div>
-      <div class="field">
-        <label>ผู้ตรวจสอบ (คนที่ 2)</label>
-        <input type="text" id="fInspector2" placeholder="ยศ ชื่อ นามสกุล">
-        <div class="sigpad-wrap" id="sigWrap2">
-          <canvas class="sigpad" id="sig2"></canvas>
-          <div class="sigpad-placeholder"><button type="button" class="sig-activate">เริ่มลงลายมือชื่อ</button></div>
-        </div>
-        <div class="sig-toolbar"><button type="button" class="sig-clear" data-target="sig2">ล้างลายเซ็น</button></div>
-      </div>
-      <div class="field">
-        <label>ผู้ขับรถ/ร่วมตรวจสอบ (ใช้ชื่อผู้ขับขี่ด้านบน)</label>
-        <div class="sigpad-wrap" id="sigWrap3">
-          <canvas class="sigpad" id="sig3"></canvas>
-          <div class="sigpad-placeholder"><button type="button" class="sig-activate">เริ่มลงลายมือชื่อ</button></div>
-        </div>
-        <div class="sig-toolbar"><button type="button" class="sig-clear" data-target="sig3">ล้างลายเซ็น</button></div>
-        <p class="hint">ผู้ขับรถ/ร่วมตรวจสอบได้อ่านและรับว่าข้อมูลถูกต้องแล้ว โดยการลงลายมือชื่อข้างต้น</p>
-      </div>
-      <div class="field"><label>หมายเหตุ</label><textarea id="fNote" placeholder="(ถ้ามี)"></textarea></div>
+<div class="card">
+  <h2>ผู้ลงลายมือชื่อ</h2>
+  <div class="field">
+    <label>ผู้ตรวจสอบ/บันทึก/ผู้ชั่งน้ำหนัก</label>
+    <input type="text" id="fInspector1" placeholder="ยศ ชื่อ นามสกุล">
+    <div class="sig-preview" id="sigPreview1">
+      <div class="sig-preview-empty"><span class="icon">✍️</span><span>แตะเพื่อลงลายมือชื่อ</span></div>
     </div>
+  </div>
+  <div class="field">
+    <label>ผู้ตรวจสอบ (คนที่ 2)</label>
+    <input type="text" id="fInspector2" placeholder="ยศ ชื่อ นามสกุล">
+    <div class="sig-preview" id="sigPreview2">
+      <div class="sig-preview-empty"><span class="icon">✍️</span><span>แตะเพื่อลงลายมือชื่อ</span></div>
+    </div>
+  </div>
+  <div class="field">
+    <label>ผู้ขับรถ/ร่วมตรวจสอบ (ใช้ชื่อผู้ขับขี่ด้านบน)</label>
+    <div class="sig-preview" id="sigPreview3">
+      <div class="sig-preview-empty"><span class="icon">✍️</span><span>แตะเพื่อลงลายมือชื่อ</span></div>
+    </div>
+    <p class="hint">ผู้ขับรถ/ร่วมตรวจสอบได้อ่านและรับว่าข้อมูลถูกต้องแล้ว โดยการลงลายมือชื่อข้างต้น</p>
+  </div>
+  <div class="field"><label>หมายเหตุ</label><textarea id="fNote" placeholder="(ถ้ามี)"></textarea></div>
+</div>
 
     <button class="submit-btn" id="submitBtn">บันทึกข้อมูล</button>
     </div>
@@ -696,6 +752,23 @@
   </div>
 </div>
 
+  <div class="sig-modal-overlay" id="sigModalOverlay">
+  <div class="sig-modal">
+    <div class="sig-modal-head">
+      <h2 id="sigModalTitle">ลงลายมือชื่อ</h2>
+      <button type="button" class="sig-modal-close" id="sigModalCloseBtn">✕</button>
+    </div>
+    <div class="sig-modal-canvas-wrap" id="sigModalCanvasWrap">
+      <canvas class="sig-modal-canvas" id="sigModalCanvas"></canvas>
+      <div class="sig-modal-hint">ลงลายมือชื่อในกรอบนี้ด้วยนิ้ว</div>
+    </div>
+    <div class="sig-modal-actions">
+      <button type="button" class="sig-modal-clear" id="sigModalClearBtn">ล้าง</button>
+      <button type="button" class="sig-modal-confirm" id="sigModalConfirmBtn" disabled>ยืนยันลายเซ็น</button>
+    </div>
+  </div>
+</div>
+  
 <div class="modal-overlay" id="reportModal">
   <div class="modal-box report-box">
     <div class="report-modal-head">
@@ -1012,94 +1085,139 @@ document.querySelectorAll('.photo-slot input').forEach(inp=>{
   });
 });
 
-/** ======= ลายเซ็นสัมผัส ======= */
-class SignaturePad{
-  constructor(canvas){
-    this.canvas = canvas; this.ctx = canvas.getContext('2d');
-    this.drawing = false; this.empty = true; this.sized = false; this.armed = false;
-    this.startPoint = null; this.pointerId = null;
-    this.resize();
-    canvas.addEventListener('pointerdown', e=>this.start(e));
-    canvas.addEventListener('pointermove', e=>this.move(e));
-    canvas.addEventListener('pointerup', e=>this.end(e));
-    canvas.addEventListener('pointercancel', e=>this.end(e));
-    // กัน LINE in-app browser (WKWebView บน iOS) ที่บางครั้งไม่เคารพ touch-action/preventDefault ของ pointer event
-    // ต้องใช้ { passive:false } เพื่อให้ preventDefault ใช้งานได้จริงกับ touch event
-    canvas.addEventListener('touchstart', e=>{ if (this.armed) e.preventDefault(); }, { passive:false });
-    canvas.addEventListener('touchmove', e=>{ if (this.armed) e.preventDefault(); }, { passive:false });
-  }
-  resize(){
-    if (this.sized) return;
-    const rect = this.canvas.getBoundingClientRect();
-    if (!rect.width) return;
-    const ratio = window.devicePixelRatio || 1;
-    this.canvas.width = rect.width * ratio;
-    this.canvas.height = rect.height * ratio;
-    this.ctx.scale(ratio, ratio);
-    this.ctx.lineWidth = 2.4; this.ctx.lineCap = 'round'; this.ctx.lineJoin = 'round';
-    this.ctx.strokeStyle = '#152230';
-    this.sized = true;
-  }
-  pos(e){ const rect = this.canvas.getBoundingClientRect(); return { x: e.clientX - rect.left, y: e.clientY - rect.top }; }
-  activate(){
-    this.armed = true;
-    this.canvas.closest('.sigpad-wrap').classList.add('signing');
-    // ล็อกสกรอลทั้งหน้าไว้ระหว่างกำลังเซ็น (เซฟตี้เน็ตชั้นที่ 2 เผื่อ touch-action ของตัว canvas เอาไม่อยู่)
-    document.body.style.overflow = 'hidden';
-    document.body.style.touchAction = 'none';
-  }
-  deactivateScrollLock(){
-    // คืนค่าการเลื่อนหน้าปกติ เรียกเมื่อเลิกเซ็น (end/clear) ให้ผู้ใช้เลื่อนหน้าอื่นๆ ได้ตามปกติ
-    document.body.style.overflow = '';
-    document.body.style.touchAction = '';
-  }
-  start(e){
-    if (!this.armed) return;
-    this.resize(); this.drawing = false; this.pointerId = e.pointerId;
-    this.canvas.setPointerCapture(e.pointerId);
-    this.startPoint = this.pos(e);
-    e.preventDefault();
-  }
-  move(e){
-    if (!this.armed || !this.startPoint) return;
-    e.preventDefault(); // เรียกทันทีตั้งแต่ pixel แรก ไม่รอผ่าน threshold ก่อน กันหน้าจอเลื่อนตั้งแต่เริ่มลาก
-    const p = this.pos(e);
-    if (!this.drawing){
-      const dx = p.x - this.startPoint.x, dy = p.y - this.startPoint.y;
-      if (Math.hypot(dx, dy) < 6) return; // Ignore taps and tiny accidental movements.
-      this.drawing = true; this.empty = false;
-      this.ctx.beginPath(); this.ctx.moveTo(this.startPoint.x, this.startPoint.y);
-      this.canvas.closest('.sigpad-wrap').classList.add('has-sig');
-    }
-    this.ctx.lineTo(p.x, p.y); this.ctx.stroke();
-  }
-  end(e){
-    if (e && this.pointerId === e.pointerId && this.canvas.hasPointerCapture(e.pointerId)) this.canvas.releasePointerCapture(e.pointerId);
-    this.drawing = false; this.startPoint = null; this.pointerId = null;
-  }
-  clear(){
-    this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height); this.empty = true; this.armed = false;
-    this.canvas.closest('.sigpad-wrap').classList.remove('has-sig', 'signing');
-    this.deactivateScrollLock();
-  }
-  isEmpty(){ return this.empty; }
-  toDataUrl(){ return this.canvas.toDataURL('image/png'); }
+/** ======= ลายเซ็น: เต็มจอผ่านโมดัล (กันปัญหาเลื่อนหลุดใน LINE in-app browser) ======= */
+const sigModalOverlay = document.getElementById('sigModalOverlay');
+const sigModalTitle = document.getElementById('sigModalTitle');
+const sigModalCanvas = document.getElementById('sigModalCanvas');
+const sigModalWrap = document.getElementById('sigModalCanvasWrap');
+const sigModalConfirmBtn = document.getElementById('sigModalConfirmBtn');
+const sigCtx = sigModalCanvas.getContext('2d');
+
+let sigModalTarget = null; // 'sig1' | 'sig2' | 'sig3'
+let sigDrawing = false, sigHasStroke = false, sigStartPoint = null, sigPointerId = null;
+
+function sigResizeCanvas(){
+  const rect = sigModalCanvas.getBoundingClientRect();
+  const ratio = window.devicePixelRatio || 1;
+  sigModalCanvas.width = rect.width * ratio;
+  sigModalCanvas.height = rect.height * ratio;
+  sigCtx.scale(ratio, ratio);
+  sigCtx.lineWidth = 2.6; sigCtx.lineCap = 'round'; sigCtx.lineJoin = 'round';
+  sigCtx.strokeStyle = '#152230';
 }
-const sigPads = {
-  sig1: new SignaturePad(document.getElementById('sig1')),
-  sig2: new SignaturePad(document.getElementById('sig2')),
-  sig3: new SignaturePad(document.getElementById('sig3'))
+function sigPos(e){
+  const rect = sigModalCanvas.getBoundingClientRect();
+  return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+}
+sigModalCanvas.addEventListener('pointerdown', e=>{
+  sigDrawing = false; sigPointerId = e.pointerId;
+  sigModalCanvas.setPointerCapture(e.pointerId);
+  sigStartPoint = sigPos(e);
+  e.preventDefault();
+});
+sigModalCanvas.addEventListener('pointermove', e=>{
+  if (!sigStartPoint) return;
+  e.preventDefault();
+  const p = sigPos(e);
+  if (!sigDrawing){
+    const dx = p.x - sigStartPoint.x, dy = p.y - sigStartPoint.y;
+    if (Math.hypot(dx, dy) < 4) return;
+    sigDrawing = true; sigHasStroke = true;
+    sigCtx.beginPath(); sigCtx.moveTo(sigStartPoint.x, sigStartPoint.y);
+    sigModalWrap.classList.add('has-sig');
+    sigModalConfirmBtn.disabled = false;
+  }
+  sigCtx.lineTo(p.x, p.y); sigCtx.stroke();
+});
+function sigEndStroke(e){
+  if (e && sigPointerId === e.pointerId && sigModalCanvas.hasPointerCapture(e.pointerId)){
+    sigModalCanvas.releasePointerCapture(e.pointerId);
+  }
+  sigDrawing = false; sigStartPoint = null; sigPointerId = null;
+}
+sigModalCanvas.addEventListener('pointerup', sigEndStroke);
+sigModalCanvas.addEventListener('pointercancel', sigEndStroke);
+// เซฟตี้เน็ตเผื่อ LINE in-app browser ไม่เคารพ touch-action/preventDefault ของ pointer event
+sigModalCanvas.addEventListener('touchstart', e=>e.preventDefault(), { passive:false });
+sigModalCanvas.addEventListener('touchmove', e=>e.preventDefault(), { passive:false });
+
+function sigClearCanvas(){
+  sigCtx.clearRect(0,0,sigModalCanvas.width,sigModalCanvas.height);
+  sigHasStroke = false;
+  sigModalWrap.classList.remove('has-sig');
+  sigModalConfirmBtn.disabled = true;
+}
+
+const SIG_TITLES = { sig1:'ผู้ตรวจสอบ/บันทึก/ผู้ชั่งน้ำหนัก', sig2:'ผู้ตรวจสอบ (คนที่ 2)', sig3:'ผู้ขับรถ/ร่วมตรวจสอบ' };
+
+function openSigModal(target){
+  sigModalTarget = target;
+  sigModalTitle.textContent = SIG_TITLES[target] || 'ลงลายมือชื่อ';
+  sigModalOverlay.classList.add('show');
+  document.body.style.overflow = 'hidden';
+  // ต้อง resize หลังโมดัลแสดงผลจริง (มีขนาด layout แล้ว) ไม่งั้น canvas จะได้ขนาด 0
+  requestAnimationFrame(()=>{ sigResizeCanvas(); sigClearCanvas(); });
+}
+function closeSigModal(){
+  sigModalOverlay.classList.remove('show');
+  document.body.style.overflow = '';
+  sigModalTarget = null;
+}
+function confirmSigModal(){
+  if (!sigHasStroke || !sigModalTarget) return;
+  sigStore[sigModalTarget].empty = false;
+  sigStore[sigModalTarget].dataUrl = sigModalCanvas.toDataURL('image/png');
+  renderSigPreview(sigModalTarget);
+  closeSigModal();
+}
+function renderSigPreview(target){
+  const box = document.getElementById('sigPreview' + target.slice(3)); // 'sig1' -> 'sigPreview1'
+  const data = sigStore[target];
+  if (!box) return;
+  if (data.empty){
+    box.classList.remove('has-sig');
+    box.innerHTML = '<div class="sig-preview-empty"><span class="icon">✍️</span><span>แตะเพื่อลงลายมือชื่อ</span></div>';
+  } else {
+    box.classList.add('has-sig');
+    box.innerHTML = '<img src="'+data.dataUrl+'" alt="ลายเซ็น"><button type="button" class="sig-preview-clear" data-target="'+target+'">✕</button>';
+  }
+}
+function clearSig(target){
+  sigStore[target].empty = true;
+  sigStore[target].dataUrl = null;
+  renderSigPreview(target);
+}
+
+document.getElementById('sigModalCloseBtn').addEventListener('click', closeSigModal);
+document.getElementById('sigModalClearBtn').addEventListener('click', sigClearCanvas);
+sigModalConfirmBtn.addEventListener('click', confirmSigModal);
+sigModalOverlay.addEventListener('click', e=>{ if (e.target === sigModalOverlay) closeSigModal(); });
+
+// เก็บผลลายเซ็นของแต่ละคนแยกจาก canvas จริงในโมดัล (โมดัลมีแค่ตัวเดียวใช้ร่วมกันทั้ง 3 คน)
+const sigStore = {
+  sig1: { empty: true, dataUrl: null },
+  sig2: { empty: true, dataUrl: null },
+  sig3: { empty: true, dataUrl: null }
 };
-document.querySelectorAll('.sig-activate').forEach(btn=>{
-  btn.addEventListener('click', ()=>{
-    const canvas = btn.closest('.sigpad-wrap').querySelector('.sigpad');
-    sigPads[canvas.id].activate();
+
+// เปิดโมดัลเมื่อแตะกล่อง preview / เคลียร์ลายเซ็นด้วยปุ่ม ✕ บนกล่อง preview โดยไม่ต้องเปิดโมดัล
+['1','2','3'].forEach(n=>{
+  document.getElementById('sigPreview'+n).addEventListener('click', (e)=>{
+    if (e.target.closest('.sig-preview-clear')){
+      clearSig('sig'+n);
+      e.stopPropagation();
+      return;
+    }
+    openSigModal('sig'+n);
   });
 });
-document.querySelectorAll('.sig-clear').forEach(btn=>{
-  btn.addEventListener('click', ()=>sigPads[btn.dataset.target].clear());
-});
-window.addEventListener('load', ()=>Object.values(sigPads).forEach(p=>p.resize()));
+
+// อินเทอร์เฟซเดิมที่โค้ดส่วนอื่น (generateReportImage, resetForm, driverConfirm) เรียกใช้อยู่ — ไม่ต้องแก้จุดอื่นในไฟล์
+const sigPads = {
+  sig1: { isEmpty: ()=>sigStore.sig1.empty, toDataUrl: ()=>sigStore.sig1.dataUrl, clear: ()=>clearSig('sig1') },
+  sig2: { isEmpty: ()=>sigStore.sig2.empty, toDataUrl: ()=>sigStore.sig2.dataUrl, clear: ()=>clearSig('sig2') },
+  sig3: { isEmpty: ()=>sigStore.sig3.empty, toDataUrl: ()=>sigStore.sig3.dataUrl, clear: ()=>clearSig('sig3') }
+};
 
 /** ======= สร้างภาพรายงานสรุป ======= */
 async function loadImageFromDataUrl(dataUrl){
